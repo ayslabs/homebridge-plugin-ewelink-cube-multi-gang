@@ -121,3 +121,4 @@ dist
 .pnp.*
 
 .DS_Store
+test

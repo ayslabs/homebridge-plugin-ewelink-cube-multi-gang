@@ -40,7 +40,6 @@ export class door_accessory extends base_accessory {
 	}
 	updateValue(params: any): void {
 		const { switch: state } = params as { switch: boolean }
-			this.service?.updateCharacteristic(this.platform.Characteristic.ContactSensorState, state)
-			// this.state.switch = state
+		this.service?.updateCharacteristic(this.platform.Characteristic.ContactSensorState, state)
 	}
 }

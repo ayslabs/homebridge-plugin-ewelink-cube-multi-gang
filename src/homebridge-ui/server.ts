@@ -1,20 +1,16 @@
 import { HomebridgePluginUiServer } from '@homebridge/plugin-ui-utils';
-import makeMdns, { MulticastDNS } from 'multicast-dns';
-import axios from 'axios'
+import makeMdns from 'multicast-dns';
+import httpRequest from '../service/httpRequest';
 import { IMdnsResp } from '../ts/interface/IMdns';
 import { EMethod } from '../ts/enum/EMethod';
 import { IHttpConfig } from '../ts/interface/IHttpConfig';
+import { EHttpPath } from '../ts/enum/EHttpPath';
 
 const mdns = makeMdns()
 
 class PluginUiServer extends HomebridgePluginUiServer {
 
 	public mdnsDevices: Map<string, { ip: string, name: string }> = new Map()
-	public PATH = {
-		ROOT: '/open-api/v1/rest',
-		ACCESS_TOKEN: '/bridge/access_token',
-		DEVICES: '/devices'
-	}
 
 	constructor() {
 		super();
@@ -44,12 +40,12 @@ class PluginUiServer extends HomebridgePluginUiServer {
 				}
 			}
 			const httpConfig: IHttpConfig = {
-				path: this.PATH.ACCESS_TOKEN,
+				path: EHttpPath.ACCESS_TOKEN,
 				ip,
 				method: EMethod.GET
 			}
 			try {
-				const resp = await this.httpRequest(httpConfig);
+				const resp = await httpRequest(httpConfig);
 				return resp
 			} catch (error) {
 				return {
@@ -66,13 +62,13 @@ class PluginUiServer extends HomebridgePluginUiServer {
 				}
 			}
 			const httpConfig: IHttpConfig = {
-				path: this.PATH.DEVICES,
+				path: EHttpPath.DEVICES,
 				ip,
 				method: EMethod.GET,
 				at
 			}
 			try {
-				const resp = await this.httpRequest(httpConfig);
+				const resp = await httpRequest(httpConfig);
 				return resp
 			} catch (error) {
 				return {
@@ -98,25 +94,6 @@ class PluginUiServer extends HomebridgePluginUiServer {
 				this.pushEvent('getMdnsDevices', [...this.mdnsDevices.values()])
 			}
 		})
-	}
-
-	async httpRequest(httpConfig: IHttpConfig) {
-		const { ip, path, method, at = '', params } = httpConfig
-		const url = `http://${ip}${this.PATH.ROOT}${path}`
-		const headers = {
-			'Content-Type': 'application/json'
-		}
-		if (at) {
-			Object.assign(headers, {
-				'Authorization': `Bearer ${at}`
-			})
-		}
-		const resp = await axios({
-			url,
-			method,
-			headers
-		})
-		return resp.data
 	}
 }
 
