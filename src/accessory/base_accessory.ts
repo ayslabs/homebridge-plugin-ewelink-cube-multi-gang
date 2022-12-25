@@ -2,7 +2,12 @@ import { Categories, PlatformAccessory } from 'homebridge'
 import { HomebridgePlatform } from "../HomebridgePlatform";
 import { IDevice } from '../ts/interface/IDevice';
 import { IBaseAccessory } from '../ts/interface/IBaseAccessory';
-
+import ihostConfig from '../config/IhostConfig';
+import httpRequest from '../service/httpRequest';
+import { IHttpConfig } from '../ts/interface/IHttpConfig';
+import { EMethod } from '../ts/enum/EMethod';
+import { EHttpPath } from '../ts/enum/EHttpPath';
+import { times } from 'lodash';
 export class base_accessory implements IBaseAccessory {
 
 	platform: HomebridgePlatform
@@ -34,4 +39,25 @@ export class base_accessory implements IBaseAccessory {
 	//	各子类单独实现功能
 	mountService() { }
 	updateValue(params: any) { }
+	//	更改设备状态请求
+	async sendToDevice(params: any) {
+		try {
+			const httpConfig: IHttpConfig = {
+				ip: ihostConfig.ip,
+				at: ihostConfig.at,
+				method: EMethod.PUT,
+				path: `${EHttpPath.DEVICES}/${this.device.serial_number}`,
+				params
+			}
+			this.platform.log.info('-------->', httpConfig)
+			const resp = await httpRequest(httpConfig);
+			this.platform.log.info('<------->', resp)
+			if (resp.error !== 0) {
+				return
+			}
+			this.platform.updateAccessory(this.device.serial_number, params);
+		} catch (error) {
+			this.platform.log.error('control fail')
+		}
+	}
 }

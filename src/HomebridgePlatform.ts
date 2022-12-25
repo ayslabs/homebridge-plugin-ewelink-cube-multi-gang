@@ -5,14 +5,14 @@ import Devices from './simulationDevice/index'
 import { ECategory } from "./ts/enum/ECategory";
 import { IBaseAccessory } from "./ts/interface/IBaseAccessory";
 import { IDevice } from "./ts/interface/IDevice";
-import { IHostsConfig, IPlatFormConfig } from "./ts/interface/IPlatFormConfig";
+import { IPlatFormConfig, IDeviceConfig } from "./ts/interface/IPlatFormConfig";
 
 import WebSocket from 'isomorphic-ws';
 import { IHttpConfig } from "./ts/interface/IHttpConfig";
 import { EHttpPath } from "./ts/enum/EHttpPath";
 import { EMethod } from "./ts/enum/EMethod";
 import httpRequest from "./service/httpRequest";
-
+import ihostConfig from "./config/IhostConfig";
 export class HomebridgePlatform implements DynamicPlatformPlugin {
 	public readonly Service: typeof Service = this.api.hap.Service;
 	public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
@@ -20,48 +20,49 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	//	cache accessory info
 	public accessories = new Map<string, PlatformAccessory>()
 	public formatAccessory = new Map<string, IBaseAccessory>()
+	public httpErrorMap = new Map<number, string>([
+		[401, 'invalid access_token'],
+		[500, 'server error']
+	])
 
 	constructor(public readonly log: Logger, public readonly config: IPlatFormConfig, public readonly api: API) {
 		this.log.info('----Finished initializing platform config-----', this.config)
 		this.api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
 			this.log.info('----Executed didFinishLaunching callback----');
 			//  TODO
-			const { ihosts = [] } = this.config
+			const { ip, at, devices = [] } = this.config
 
-			//	1. 确认是否有可用 ihost设备
-			if (ihosts.length === 0) {
-				this.log.warn('***** No avaliable ihost *****');
+			//	1. 确认是否有可用 ihost 设备,ip at 有效
+			if (!ip || !at) {
+				this.log.warn('***** No avaliable ihost! Please check the config.json *****');
 				return;
 			}
 
-			//  2. 确认 ihost 有效，同时只能有一个有效
-			let avaliableHostConfig: IHostsConfig | undefined = undefined
-			for (let ihost of ihosts) {
-				if (ihost.isValid) {
-					avaliableHostConfig = ihost
+			try {
+				//	2. 调用 openapi 获取设备列表，与本地存储做对比
+				const httpConfig: IHttpConfig = {
+					ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
 				}
-			}
-			if (!avaliableHostConfig) {
-				this.log.warn('***** No avaliable ihost *****');
-				return;
-			}
-			const { at, ip, devices } = avaliableHostConfig;
-			if (!at || !ip) {
-				this.log.warn('***** No avaliable ihost ip or access_token *****');
-				return;
-			}
-			//	3. 调用 openapi 获取设备列表，与本地存储做对比
-			const httpConfig: IHttpConfig = {
-				ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
-			}
-			const openDeviceResp = await httpRequest(httpConfig);
-			this.log.info('***** Get openapi devices *****', openDeviceResp.data);
+				const openDeviceResp = await httpRequest(httpConfig);
+				this.log.info('***** Get openapi devices *****', openDeviceResp);
+				// if (openDeviceResp.error !== 0) {
+				// 	this.handleHttpError(openDeviceResp.error)
+				// 	return;
+				// }
+				//	3. 初始化Ihost配置类
+				ihostConfig.handleConfig(config);
+				//	3. 对比 openapi 设备和 配置文件设备
+				// const filterDevices = this.handleDevice(openDeviceResp.data, devices)
+				// this.log.info('***** handle devices *****', filterDevices);
 
-			//	4. 对比 openapi 设备和 配置文件设备
-			const filterDevices = this.handleDevice()
+			} catch (error) {
+				this.log.warn('***** Unexpected error *****', error);
+				return;
+			}
+
 			//	init server
-			this.initWs()
-			//	get IHost Device
+			// this.initWs()
+			// //	get IHost Device
 			const devicess = Devices as IDevice[];
 
 			//	transfer device 2 accessory
@@ -73,8 +74,23 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			//	close server
 		})
 	}
-	handleDevice() {
-
+	//	处理 openapi设备 与 config.json配置文件中的设备 的对比，筛选出可以注册到hb的设备
+	handleDevice(openDevices: IDevice[], devices: IDeviceConfig[]) {
+		if (!devices || !devices.length) {
+			return openDevices ?? []
+		}
+		const filterDevices = openDevices.map(device => {
+			//	配置文件中不存在该设备，可以返回
+			if (!JSON.stringify(devices).includes(device.serial_number)) {
+				return device
+			} else {
+				//	配置文件中存在该设备，则根据选中情况来判定
+				const temp = devices.find(item => item.serial_number === device.serial_number);
+				if (!temp) return device
+				if (temp && temp.checked) return device
+			}
+		})
+		return filterDevices
 	}
 
 	configureAccessory(accessory: PlatformAccessory) {
@@ -179,5 +195,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		if (accessory && typeof accessory.updateValue === 'function') {
 			accessory.updateValue(params)
 		}
+	}
+	handleHttpError(error: number) {
+		if (this.httpErrorMap.get(error)) {
+			return this.httpErrorMap.get(error)
+		}
+		return 'unknown error'
 	}
 }

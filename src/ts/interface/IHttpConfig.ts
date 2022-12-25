@@ -6,6 +6,7 @@ interface IHttpConfig {
 	method: EMethod,
 	at?: string,
 	params?: any
+
 }
 
 export { IHttpConfig }

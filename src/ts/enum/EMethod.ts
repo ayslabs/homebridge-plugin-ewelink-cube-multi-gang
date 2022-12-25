@@ -1,6 +1,7 @@
 enum EMethod {
 	GET = 'get',
-	POST = 'post'
+	POST = 'post',
+	PUT = 'put'
 }
 
 export { EMethod }

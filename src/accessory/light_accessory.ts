@@ -25,6 +25,7 @@ export class light_accessory extends base_accessory {
 			.onGet(() => this.state.switch)
 			.onSet((value: CharacteristicValue) => {
 				this.state.switch = value as boolean;
+				this.sendToDevice({})
 				this.platform.log.info('--->', value)
 			})
 		this.service.getCharacteristic(this.platform.Characteristic.Brightness)
