@@ -896,41 +896,11 @@ const devices:Array<any> = [
 
 				"4": {
 
-					"toggleState": "off",
+					"toggleState": "on",
 
 					"updated_at": 1670226432383
 
 				},
-
-				"toggle": {
-
-					"1": {
-
-						"toggleState": "off"
-
-					},
-
-					"2": {
-
-						"toggleState": "off"
-
-					},
-
-					"3": {
-
-						"toggleState": "off"
-
-					},
-
-					"4": {
-
-						"toggleState": "off"
-
-					},
-
-					"updated_at": 1670226163825
-
-				}
 
 			}
 

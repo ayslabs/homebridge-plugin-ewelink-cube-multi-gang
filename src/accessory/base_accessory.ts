@@ -7,7 +7,8 @@ import httpRequest from '../service/httpRequest';
 import { IHttpConfig } from '../ts/interface/IHttpConfig';
 import { EMethod } from '../ts/enum/EMethod';
 import { EHttpPath } from '../ts/enum/EHttpPath';
-import { times } from 'lodash';
+import { ECapability } from '../ts/enum/ECapability';
+
 export class base_accessory implements IBaseAccessory {
 
 	platform: HomebridgePlatform

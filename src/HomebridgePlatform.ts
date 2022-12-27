@@ -40,11 +40,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
 			try {
 				//	2. 调用 openapi 获取设备列表，与本地存储做对比
-				const httpConfig: IHttpConfig = {
-					ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
-				}
-				const openDeviceResp = await httpRequest(httpConfig);
-				this.log.info('***** Get openapi devices *****', openDeviceResp);
+				// const httpConfig: IHttpConfig = {
+				// 	ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
+				// }
+				// const openDeviceResp = await httpRequest(httpConfig);
+				// this.log.info('***** Get openapi devices *****', openDeviceResp);
 				// if (openDeviceResp.error !== 0) {
 				// 	this.handleHttpError(openDeviceResp.error)
 				// 	return;

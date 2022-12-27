@@ -9,7 +9,7 @@ interface IDevice {
 	display_category: ECategory,
 	link_layer_type?: string,
 	capabilities: ICapability[],
-	state: IState[] | null,
+	state: any,
 	online: boolean,
 	tags: any
 }
@@ -17,14 +17,8 @@ interface IDevice {
 interface ICapability {
 	capability: ECapability
 	permission: string
+	name?: string
 }
 
-interface IState {
-	[key: string]: IStateInfo
-}
-
-interface IStateInfo {
-	updated_at?: number
-}
 
 export { IDevice }

@@ -1,34 +1,33 @@
 import { HomebridgePluginUiServer } from '@homebridge/plugin-ui-utils';
-import makeMdns from 'multicast-dns';
+import makeMdns, { MulticastDNS } from 'multicast-dns';
 import httpRequest from '../service/httpRequest';
 import { IMdnsResp } from '../ts/interface/IMdns';
 import { EMethod } from '../ts/enum/EMethod';
 import { IHttpConfig } from '../ts/interface/IHttpConfig';
 import { EHttpPath } from '../ts/enum/EHttpPath';
 
-const mdns = makeMdns()
-
 class PluginUiServer extends HomebridgePluginUiServer {
 
 	public mdnsDevices: Map<string, { ip: string, name: string }> = new Map()
-
+	public mdns: MulticastDNS | undefined = undefined
 	constructor() {
 		super();
+		this.mdns = makeMdns({
+			interface: '192.168.2.25'
+		})
 		//	开启mdns查询
 		this.onRequest('/queryMdns', async () => {
-			mdns.query({
-				questions: [
-					{
-						name: 'ihost.local',
-						type: 'A',
-					},
-				],
-			})
+			this.queryDevices();
 			this.pushMdnsDevices();
 		})
 		//	根据ip查询
-		this.onRequest('/getDeviceByIp', async () => {
-
+		this.onRequest('/getDeviceByIp', async (ip: string) => {
+			// this.mdns = makeMdns({
+			// 	ip
+			// })
+			// return this.mdns
+			this.queryDevices()
+			this.pushMdnsDevices()
 		})
 		//	获取 access_token
 		this.onRequest('/getAccessToken', async (ip) => {
@@ -77,12 +76,17 @@ class PluginUiServer extends HomebridgePluginUiServer {
 				}
 			}
 		})
+		//	Destroy the mdns instance. Closes the udp socket.
+		this.onRequest('/closeQuery', async () => {
+			this.mdns?.destroy()
+		})
 		this.ready();
 	}
 	//	主动推送mdns查询到的设备给到前端
 	pushMdnsDevices() {
-		mdns.on('response', (response) => {
+		this.mdns?.on('response', (response) => {
 			const { answers } = response as { answers: IMdnsResp[] };
+			this.pushEvent('getMdnsDevices', answers)
 			if (!JSON.stringify(answers).includes('ihost')) return;
 			for (let answer of answers) {
 				if (answer.name.includes('ihost')) {
@@ -93,6 +97,16 @@ class PluginUiServer extends HomebridgePluginUiServer {
 			if (this.mdnsDevices.size > 0) {
 				this.pushEvent('getMdnsDevices', [...this.mdnsDevices.values()])
 			}
+		})
+	}
+	queryDevices() {
+		this.mdns?.query({
+			questions: [
+				{
+					name: 'ihost.local',
+					type: 'A',
+				},
+			],
 		})
 	}
 }
