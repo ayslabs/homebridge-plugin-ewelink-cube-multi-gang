@@ -30,7 +30,11 @@ const devices:Array<any> = [
 
 		"idx_in_home": 9,
 
-		"state": null,
+		"state": {
+            "battery": {
+                "battery": 80
+            }
+        },
 
 		"tags": {
 
@@ -697,7 +701,6 @@ const devices:Array<any> = [
 				"permission": "readWrite"
 
 			},
-
 			{
 
 				"capability": "rssi",
@@ -725,7 +728,7 @@ const devices:Array<any> = [
 				"updated_at": 1670226391411
 
 			},
-
+            
 			"rssi": {
 
 				"rssi": -23,
@@ -1020,7 +1023,7 @@ const devices:Array<any> = [
 
 		"firmware_version": "firmware version1",
 
-		"display_category": "button",
+		"display_category": "curtain",
 
 		"link_layer_type": "unknow",
 
