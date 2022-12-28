@@ -32,7 +32,7 @@ export class switch_accessory extends base_accessory {
 	}
 	initDeviceState() {
 		this.state.online = this.device.online;
-		let switchState = Object.keys(this.device.state ? this.device.state['toggle'] : {});
+		let switchState = Object.keys((this.device.state && this.device.state['toggle']) ? this.device.state['toggle'] : {});
 		this.platform.log.info('switchState------>', switchState)
 		if (switchState.length) {
 			switchState.forEach(index => {
@@ -70,7 +70,15 @@ export class switch_accessory extends base_accessory {
 			// 		this.platform.log.info('--->', value)
 			// 	})
 		}
-
+		if (deviceUtils.renderServiceByCapability(this.device, ECapability.POWER) && !deviceUtils.renderServiceByCapability(this.device, ECapability.TOGGLE)) {
+			this.switchService_0 = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
+			this.switchService_0?.getCharacteristic(this.platform.Characteristic.On)
+				.onGet(() => this.state.switch_0)
+				.onSet((value: CharacteristicValue) => {
+					this.state.switch_0 = value as boolean;
+					this.platform.log.info('--->', value)
+				})
+		}
 		// this.switchService_1 = this.accessory?.getService('switch 1') || this.accessory!.addService(this.platform.Service.Switch, 'switch 1', 'switch 1');
 		// this.switchService_1.getCharacteristic(this.platform.Characteristic.On)
 		// 	.onGet(() => this.state.switch1)

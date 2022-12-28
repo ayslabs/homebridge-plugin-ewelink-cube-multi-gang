@@ -1,4 +1,4 @@
-const devices:Array<any> = [
+const devices: Array<any> = [
 	{
 		"serial_number": "f9404a29-d410-4ec7-a39b-7b57bebadf95",
 		"name": "无线按键开关",
@@ -1090,6 +1090,39 @@ const devices:Array<any> = [
 
 		"state_updated_at": 1670225114797
 
+	},
+	{
+		"serial_number": "c95c2f59-a630-450e-a599-b91d6d47de86",
+		"name": "Micro 77",
+		"manufacturer": "深圳松诺技术有限公司",
+		"model": "CKA-DM4-GL",
+		"firmware_version": "1",
+		"display_category": "switch",
+		"link_layer_type": "",
+		"capabilities": [
+			{
+				"capability": "power",
+				"permission": "readWrite"
+			}
+		],
+		"rid": null,
+		"gid_list": [],
+		"idx_in_room": null,
+		"idx_in_home": 0,
+		"state": {
+			"power": {
+				"powerState": "off",
+				"updated_at": 1672145603617
+			}
+		},
+		"tags": {
+			"deviceInfo": "eyJkZXZpY2VJZCI6IjEwMDEyNmQwM2QiLCJkZXZpY2VrZXkiOiJkZGQwYWE3OS05OTQ0LTRkYjgtYjFmNy1iZTRlYjYxOGU1ZWMiLCJzZWxmQXBpa2V5IjoiNjY5ZDM0ZjQtMmNiZi00YTBkLWFmYTQtMjMyNTE0M2YxNzNlIiwiYWNjb3VudCI6Iis4NjEzMDQzNDg1MTU5Iiwic2VydmljZV9hZGRyZXNzIjoiaHR0cDovL2lob3N0OjgzMjEvYXBpL3YxL2RldmljZS8xMDAxMjZkMDNkIn0="
+		},
+		"type": "thirdparty",
+		"enable_log": true,
+		"enable_debug_log": false,
+		"online": true,
+		"state_updated_at": 1672145603617
 	}
 
 ]

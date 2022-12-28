@@ -40,21 +40,28 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
 			try {
 				//	2. 调用 openapi 获取设备列表，与本地存储做对比
-				// const httpConfig: IHttpConfig = {
-				// 	ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
-				// }
-				// const openDeviceResp = await httpRequest(httpConfig);
-				// this.log.info('***** Get openapi devices *****', openDeviceResp);
-				// if (openDeviceResp.error !== 0) {
-				// 	this.handleHttpError(openDeviceResp.error)
-				// 	return;
-				// }
+				const httpConfig: IHttpConfig = {
+					ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
+				}
+				const openDeviceResp = await httpRequest(httpConfig);
+				this.log.info('***** Get openapi devices *****', openDeviceResp);
+				if (openDeviceResp.error !== 0) {
+					this.handleHttpError(openDeviceResp.error)
+					return;
+				}
 				//	3. 初始化Ihost配置类
 				ihostConfig.handleConfig(config);
 				//	3. 对比 openapi 设备和 配置文件设备
-				// const filterDevices = this.handleDevice(openDeviceResp.data, devices)
-				// this.log.info('***** handle devices *****', filterDevices);
-
+				const filterDevices = this.handleDevice(openDeviceResp.data.device_list, devices)
+				this.log.info('***** handle devices *****', filterDevices);
+				if (!filterDevices.length) {
+					this.log.warn('***** No Avaliable Devices *****')
+					return
+				}
+				//	transfer device 2 accessory
+				for (let device of filterDevices) {
+					this.transferDevice(device)
+				}
 			} catch (error) {
 				this.log.warn('***** Unexpected error *****', error);
 				return;
@@ -63,12 +70,9 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			//	init server
 			// this.initWs()
 			// //	get IHost Device
-			const devicess = Devices as IDevice[];
+			// const devicess = Devices as IDevice[];
 
-			//	transfer device 2 accessory
-			for (let device of devicess) {
-				this.transferDevice(device)
-			}
+
 		})
 		this.api.on(APIEvent.SHUTDOWN, () => {
 			//	close server
@@ -76,21 +80,22 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 	//	处理 openapi设备 与 config.json配置文件中的设备 的对比，筛选出可以注册到hb的设备
 	handleDevice(openDevices: IDevice[], devices: IDeviceConfig[]) {
-		if (!devices || !devices.length) {
-			return openDevices ?? []
+		if (!devices || !devices.length || !openDevices) {
+			return []
 		}
-		const filterDevices = openDevices.map(device => {
+		const finalDevice: IDevice[] = []
+		openDevices.forEach(device => {
 			//	配置文件中不存在该设备，可以返回
 			if (!JSON.stringify(devices).includes(device.serial_number)) {
-				return device
+				finalDevice.push(device)
 			} else {
 				//	配置文件中存在该设备，则根据选中情况来判定
 				const temp = devices.find(item => item.serial_number === device.serial_number);
-				if (!temp) return device
-				if (temp && temp.checked) return device
+				if (!temp) finalDevice.push(device)
+				if (temp && temp.checked) finalDevice.push(device)
 			}
 		})
-		return filterDevices
+		return finalDevice
 	}
 
 	configureAccessory(accessory: PlatformAccessory) {

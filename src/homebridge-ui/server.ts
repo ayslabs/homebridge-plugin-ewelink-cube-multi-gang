@@ -13,7 +13,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
 	constructor() {
 		super();
 		this.mdns = makeMdns({
-			interface: '192.168.2.25'
+			// interface: '192.168.2.25'
 		})
 		//	开启mdns查询
 		this.onRequest('/queryMdns', async () => {
@@ -86,7 +86,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
 	pushMdnsDevices() {
 		this.mdns?.on('response', (response) => {
 			const { answers } = response as { answers: IMdnsResp[] };
-			this.pushEvent('getMdnsDevices', answers)
+			// this.pushEvent('getMdnsDevices', answers)
 			if (!JSON.stringify(answers).includes('ihost')) return;
 			for (let answer of answers) {
 				if (answer.name.includes('ihost')) {
