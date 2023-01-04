@@ -247,7 +247,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 					Object.assign(accessory.device.state['toggle'], toggleItem)
 				}
 			}
-			accessory.updateValue()
+			accessory.updateValue(fullState)
 
 			// const { state } = accessory.device;
 			// let deviceState = state;

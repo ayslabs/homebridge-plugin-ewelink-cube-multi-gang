@@ -280,7 +280,7 @@ const deviceCapaStateMap = new Map<
 
 function getDeviceStateByCap(capability: ECapability, device: IDevice, index?: number) {
 	const { capabilities = [] } = device;
-	let deviceState: string | boolean | object = '';
+	let deviceState: any = '';
 	capabilities.forEach((item) => {
 		if (item.capability === capability) {
 			deviceState = deviceCapaStateMap.get(capability)?.getter({ device, index })
