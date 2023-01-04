@@ -723,7 +723,7 @@ const devices: Array<any> = [
 
 			"power": {
 
-				"powerState": "on",
+				"powerState": "off",
 
 				"updated_at": 1670226391411
 
@@ -875,7 +875,7 @@ const devices: Array<any> = [
 
 				"1": {
 
-					"toggleState": "off",
+					"toggleState": "on",
 
 					"updated_at": 1670226428104
 
@@ -883,7 +883,7 @@ const devices: Array<any> = [
 
 				"2": {
 
-					"toggleState": "off",
+					"toggleState": "on",
 
 					"updated_at": 1670226429376
 
@@ -899,7 +899,7 @@ const devices: Array<any> = [
 
 				"4": {
 
-					"toggleState": "on",
+					"toggleState": "off",
 
 					"updated_at": 1670226432383
 
@@ -1023,7 +1023,7 @@ const devices: Array<any> = [
 
 		"firmware_version": "firmware version1",
 
-		"display_category": "curtain",
+		"display_category": "camera",
 
 		"link_layer_type": "unknow",
 
@@ -1114,7 +1114,7 @@ const devices: Array<any> = [
 		"idx_in_home": 0,
 		"state": {
 			"power": {
-				"powerState": "off",
+				"powerState": "on",
 				"updated_at": 1672145603617
 			}
 		},

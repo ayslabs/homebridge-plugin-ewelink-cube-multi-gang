@@ -14,7 +14,7 @@ interface IDevice {
     tags: any;
 }
 
-interface ICapability {
+export interface ICapability {
     capability: ECapability;
     permission: string;
     name?: string;

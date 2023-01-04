@@ -6,14 +6,8 @@ import { ECapability } from '../ts/enum/ECapability';
 import deviceUtils from '../utils/deviceUtils';
 
 export class switch_accessory extends base_accessory {
-	public state: IDeviceState = {
-		online: false,
-		switch_0: false,
-		switch_1: false,
-		switch_2: false,
-		switch_3: false
-	};
 
+	switchService: Service | undefined;
 	switchService_0: Service | undefined;
 	switchService_1: Service | undefined;
 	switchService_2: Service | undefined;
@@ -21,8 +15,6 @@ export class switch_accessory extends base_accessory {
 
 	constructor(platform: HomebridgePlatform, accessory: PlatformAccessory | undefined, device: IDevice) {
 		super(platform, accessory, Categories.SWITCH, device);
-		this.state = this.initDeviceState(this.state, this.device);
-		this.platform.log.info('switch_accessory------>', this.state.online, this.state.switch_0, this.state.switch_1, this.state.switch_2, this.state.switch_3);
 	}
 	mountService(): void {
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.TOGGLE)) {
@@ -31,47 +23,59 @@ export class switch_accessory extends base_accessory {
 				let service = `switchService_${i}` as 'switchService_0' | 'switchService_1' | 'switchService_2' | 'switchService_3';
 				let switchState = `switch_${i}` as 'switch_0' | 'switch_1' | 'switch_2' | 'switch_3';
 				let subService: string = `switch_${i}`;
-				let channelName = `channel_${i}`;
+				let channelName = channelInfo[i].name;
 				if (i === 0) {
-					this[service] = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
+					this[service] = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch, channelName);
 				} else {
 					this[service] = this.accessory?.getService(subService) || this.accessory?.addService(this.platform.Service.Switch, channelName, subService);
 				}
-				this[service]
-					?.getCharacteristic(this.platform.Characteristic.On)
-					.onGet(() => this.state[switchState]!)
+				this[service]?.getCharacteristic(this.platform.Characteristic.On)
+					.onGet(() => {
+						const index = switchState.split('_')[1]
+						return deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
+					})
 					.onSet((value: CharacteristicValue) => {
-						this.state[switchState] = value as boolean;
-						this.platform.log.info('--->', value, switchState);
+						const index = switchState.split('_')[1]
+						const params = deviceUtils.getDeviceSendState(ECapability.TOGGLE, { value, index: +index })
+						this.sendToDevice(params)
 					});
 			}
-			if (deviceUtils.renderServiceByCapability(this.device, ECapability.POWER) && !deviceUtils.renderServiceByCapability(this.device, ECapability.TOGGLE)) {
-				this.switchService_0 = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
-				this.switchService_0?.getCharacteristic(this.platform.Characteristic.On)
-					.onGet(() => this.state.switch_0!)
-					.onSet((value: CharacteristicValue) => {
-						this.state.switch_0 = value as boolean;
-						this.platform.log.info('--->', value)
-					})
-			}
-			// this.switchService_0 = this.accessory!.getService(this.platform.Service.Switch) || this.accessory!.addService(this.platform.Service.Switch);
-			// this.switchService_0.getCharacteristic(this.platform.Characteristic.On)
-			// 	.onGet(() => this.state.switch)
-			// 	.onSet((value: CharacteristicValue) => {
-			// 		this.state.switch = value as boolean;
-			// 		this.platform.log.info('--->', value)
-			// 	})
 		}
-
-		// this.switchService_1 = this.accessory?.getService('switch 1') || this.accessory!.addService(this.platform.Service.Switch, 'switch 1', 'switch 1');
-		// this.switchService_1.getCharacteristic(this.platform.Characteristic.On)
-		// 	.onGet(() => this.state.switch1)
-		// 	.onSet((value: CharacteristicValue) => {
-		// 		this.state.switch1 = value as boolean;
-		// 		this.platform.log.info('--->', value)
-		// 	})
+		if (deviceUtils.renderServiceByCapability(this.device, ECapability.POWER) && !deviceUtils.renderServiceByCapability(this.device, ECapability.TOGGLE)) {
+			this.switchService = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
+			this.switchService?.getCharacteristic(this.platform.Characteristic.On)
+				.onGet(() => {
+					return deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device)
+				})
+				.onSet((value: CharacteristicValue) => {
+					const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
+					this.sendToDevice(params)
+				})
+		}
 	}
-	updateValue(params: { switch: 'on' | 'off' }): void {
-		this.platform.log.info('switch_accessory updateValue', this.state, params);
+	updateValue(deviceState?: any): void {
+		this.platform.log.info('outlet_accessory updateValue', JSON.stringify(this.device.state, null, 2));
+		// let state: any = {}
+		// if (!deviceState) {
+		// 	state = this.device.state
+		// } else {
+		// 	state = deviceState
+		// }
+		const stateArr = Object.keys(this.device.state);
+		if (!stateArr.length) return;
+		stateArr.forEach(stateKey => {
+			if (stateKey === 'power') {
+				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
+			} else if (stateKey === 'toggle') {
+				const toggleItem = this.device.state['toggle'];
+				this.platform.log.info('toggleItem', toggleItem)
+				Object.keys(toggleItem).forEach(channel => {
+					const serviceName = `switchService_${+channel - 1}` as 'switchService_0' | 'switchService_1' | 'switchService_2' | 'switchService_3'
+					this.platform.log.info('serviceName', serviceName, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
+					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
+				})
+			}
+		})
+		this.platform.log.info('this.device.state', JSON.stringify(this.device.state, null, 2))
 	}
 }

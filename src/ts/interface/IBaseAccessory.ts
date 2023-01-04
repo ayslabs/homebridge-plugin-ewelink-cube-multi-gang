@@ -9,6 +9,5 @@ export interface IBaseAccessory {
 	category: Categories
 	device: IDevice
 	mountService: () => void
-	updateValue: (params: any) => void
-
+	updateValue: (params?: any) => void
 }

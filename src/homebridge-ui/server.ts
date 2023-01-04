@@ -109,6 +109,9 @@ class PluginUiServer extends HomebridgePluginUiServer {
 			],
 		})
 	}
+	queryDeviceByIp(ip: string) {
+		this.mdns?.query('', { port: 0, address: ip })
+	}
 }
 
 (() => new PluginUiServer())();
