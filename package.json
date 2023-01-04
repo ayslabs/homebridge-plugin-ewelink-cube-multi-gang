@@ -6,7 +6,7 @@
 	"main": "lib/index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"build": "rimraf ./lib && tsc"
+		"build": "rimraf ./lib && tsc && cd lib/homebridge-ui && mkdir public"
 	},
 	"engines": {
 		"node": ">=14.18.1",

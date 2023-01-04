@@ -582,7 +582,7 @@ const devices: Array<any> = [
 
 		"serial_number": "a93d959c-8cc3-4498-a33b-1d6084901165",
 
-		"name": "温湿度传感器（正常）",
+		"name": "温湿度传感器",
 
 		"manufacturer": "manufacturer namess",
 
@@ -939,7 +939,7 @@ const devices: Array<any> = [
 
 		"firmware_version": "firmware version1",
 
-		"display_category": "waterLeakDetector",
+		"display_category": "camera",
 
 		"link_layer_type": "unknow",
 
@@ -1126,8 +1126,348 @@ const devices: Array<any> = [
 		"enable_debug_log": false,
 		"online": true,
 		"state_updated_at": 1672145603617
-	}
+	},
 
+	{
+
+		"serial_number": "e6ed1750-226b-4120-aeb7-89769e5b03bb",
+
+		"name": "zigbee 移动传感器",
+
+		"manufacturer": "manufacturer namess",
+
+		"model": "model namess",
+
+		"firmware_version": "firmware version11",
+
+		"display_category": "motionSensor",
+
+		"link_layer_type": "",
+
+		"capabilities": [
+
+			{
+
+				"capability": "detect",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "battery",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "rssi",
+
+				"permission": "readWrite"
+
+			}
+
+		],
+
+		"rid": null,
+
+		"gid_list": [],
+
+		"idx_in_room": null,
+
+		"idx_in_home": 4,
+
+		"state": {
+
+			"detect": {
+
+				"detected": false,
+
+				"updated_at": 1669962118981
+
+			},
+
+			"battery": {
+
+				"battery": 40,
+
+				"updated_at": 1669962118986
+
+			}
+
+		},
+
+		"tags": {
+
+			"key": "value"
+
+		},
+
+		"type": "thirdparty",
+
+		"enable_log": true,
+
+		"enable_debug_log": false,
+
+		"online": true,
+
+		"state_updated_at": 1669962118986
+
+	},
+
+	{
+
+		"serial_number": "e6ed1750-226b-4120-aeb7-89769e5b03cc",
+
+		"name": "zigbee 水浸传感器",
+
+		"manufacturer": "manufacturer namess",
+
+		"model": "model namess",
+
+		"firmware_version": "firmware version11",
+
+		"display_category": "waterLeakDetector",
+
+		"link_layer_type": "",
+
+		"capabilities": [
+
+			{
+
+				"capability": "detect",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "battery",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "rssi",
+
+				"permission": "readWrite"
+
+			}
+
+		],
+
+		"rid": null,
+
+		"gid_list": [],
+
+		"idx_in_room": null,
+
+		"idx_in_home": 4,
+
+		"state": {
+
+			"detect": {
+
+				"detected": false,
+
+				"updated_at": 1669962118981
+
+			},
+
+			"battery": {
+
+				"battery": 40,
+
+				"updated_at": 1669962118986
+
+			}
+
+		},
+
+		"tags": {
+
+			"key": "value"
+
+		},
+
+		"type": "thirdparty",
+
+		"enable_log": true,
+
+		"enable_debug_log": false,
+
+		"online": true,
+
+		"state_updated_at": 1669962118986
+
+	},
+
+	{
+
+		"serial_number": "a93d959c-8cc3-4498-a33b-1d6084901100",
+
+		"name": "温",
+
+		"manufacturer": "manufacturer namess",
+
+		"model": "model namess",
+
+		"firmware_version": "firmware version11",
+
+		"display_category": "temperatureSensor",
+
+		"link_layer_type": "",
+
+		"capabilities": [
+
+			{
+
+				"capability": "temperature",
+
+				"permission": "read"
+
+			},
+			{
+
+				"capability": "battery",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "rssi",
+
+				"permission": "readWrite"
+
+			}
+
+		],
+
+		"rid": null,
+
+		"gid_list": [],
+
+		"idx_in_room": null,
+
+		"idx_in_home": 2,
+
+		"state": {
+
+			"temperature": {
+
+				"temperature": 26,
+
+				"updated_at": 1669966629659
+
+			}
+
+		},
+
+		"tags": {
+
+			"key": "value"
+
+		},
+
+		"type": "thirdparty",
+
+		"enable_log": true,
+
+		"enable_debug_log": false,
+
+		"online": true,
+
+		"state_updated_at": 1669966629659
+
+	},
+	{
+
+		"serial_number": "a93d959c-8cc3-4498-a33b-1d6084901111",
+
+		"name": "湿",
+
+		"manufacturer": "manufacturer namess",
+
+		"model": "model namess",
+
+		"firmware_version": "firmware version11",
+
+		"display_category": "humiditySensor",
+
+		"link_layer_type": "",
+
+		"capabilities": [
+			{
+
+				"capability": "humidity",
+
+				"permission": "read"
+
+			},
+
+			{
+
+				"capability": "battery",
+
+				"permission": "readWrite"
+
+			},
+
+			{
+
+				"capability": "rssi",
+
+				"permission": "readWrite"
+
+			}
+
+		],
+
+		"rid": null,
+
+		"gid_list": [],
+
+		"idx_in_room": null,
+
+		"idx_in_home": 2,
+
+		"state": {
+
+			"temperature": {
+
+				"temperature": 26,
+
+				"updated_at": 1669966629659
+
+			}
+
+		},
+
+		"tags": {
+
+			"key": "value"
+
+		},
+
+		"type": "thirdparty",
+
+		"enable_log": true,
+
+		"enable_debug_log": false,
+
+		"online": true,
+
+		"state_updated_at": 1669966629659
+
+	},
 ]
 
 export default devices

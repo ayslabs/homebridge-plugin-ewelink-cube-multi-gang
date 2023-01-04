@@ -29,12 +29,12 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	public event: EventSource | null = null
 
 	constructor(public readonly log: Logger, public readonly config: IPlatFormConfig, public readonly api: API) {
-		this.log.info('----Finished initializing platform config-----', this.config)
+		this.logManager(LogLevel.INFO, '----Finished initializing platform config-----', this.config)
 		this.api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
-			this.log.info('----Executed didFinishLaunching callback----');
+			this.logManager(LogLevel.INFO, '----Executed didFinishLaunching callback----')
 			// return;
 			//  TODO
-			const { ip, at, devices = [] } = this.config
+			const { ip, at, enableDeviceLog, devices = [] } = this.config
 
 			//	1. 确认是否有可用 ihost 设备,ip at 有效
 			if (!ip || !at) {
@@ -69,7 +69,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 					this.transferDevice(device)
 				}
 			} catch (error) {
-				this.log.warn('***** Unexpected error *****', error);
+				this.logManager(LogLevel.WARN, '----Unexpected error----', error)
 				return;
 			}
 
@@ -78,6 +78,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		})
 		this.api.on(APIEvent.SHUTDOWN, () => {
 			//	close server
+			this.logManager(LogLevel.INFO, '----plugin shutdown----')
 		})
 	}
 	//	处理 openapi设备 与 config.json配置文件中的设备 的对比，筛选出可以注册到hb的设备
@@ -101,7 +102,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 
 	configureAccessory(accessory: PlatformAccessory) {
-		this.log.info('----Loading accessory from cache----', accessory.displayName);
+		this.logManager(LogLevel.INFO, '----Loading accessory from cache----', accessory.displayName)
 		this.accessories.set(accessory.UUID, accessory);
 	}
 	transferDevice(device: IDevice) {
@@ -119,6 +120,8 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			deviceAccessory = new DeviceType.light_accessory(this, cacheAccessory, device)
 		} else if (category === ECategory.SMOKE_DETECTOR) {
 			deviceAccessory = new DeviceType.smoke_accessory(this, cacheAccessory, device)
+		} else if (category === ECategory.WATER_LEAK_DETECTOR) {
+			deviceAccessory = new DeviceType.water_detector_accessory(this, cacheAccessory, device)
 		} else if (category === ECategory.MOTION_SENSOR) {
 			deviceAccessory = new DeviceType.motion_accessory(this, cacheAccessory, device)
 		} else if (category === ECategory.CONTACT_SENSOR) {
@@ -145,17 +148,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 	//	registry accessory to platform plugin
 	registryAccesory(accessory: PlatformAccessory) {
-		this.log.log(LogLevel.INFO, `add accessory ${accessory.displayName} ${accessory.UUID}`)
+		this.logManager(LogLevel.INFO, `add accessory ${accessory.displayName} ${accessory.UUID}`)
 		this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 	}
 	//	add accessory
 	addAccessory(device: IDevice) {
-		this.log.log(LogLevel.INFO, `add accessory ${device.name}`)
+		this.logManager(LogLevel.INFO, `add accessory ${device.name}`)
 		this.transferDevice(device)
 	}
 	//	delete accessory
 	deleteAccessory(accessory: PlatformAccessory) {
-		this.log.log(LogLevel.INFO, `delete accessory ${accessory.displayName}`)
+		this.logManager(LogLevel.INFO, `delete accessory ${accessory.displayName}`)
 		this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory])
 		this.accessories.delete(accessory.UUID);
 		this.formatAccessory.delete(accessory.UUID);
@@ -166,10 +169,10 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		try {
 			this.event = new EventSource(url);
 			this.event.onopen = (event) => {
-				this.log.info('init sse success', event.data)
+				this.logManager(LogLevel.INFO, 'init sse success', event.data)
 			}
 			this.event.onerror = (event) => {
-				this.log.error('init sse error', event.data)
+				this.logManager(LogLevel.ERROR, 'init sse error', event.data)
 			}
 			this.event.addEventListener('device#v1#addDevice', (event) => {
 				const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
@@ -188,7 +191,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 				}
 			})
 		} catch (error) {
-			this.log.error('catch init sse error', error)
+			this.logManager(LogLevel.ERROR, 'catch init sse error', error)
 		}
 	}
 	clearSSE() {
@@ -198,7 +201,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			this.event?.removeEventListener('device#v1#deleteDevice', () => { })
 			this.event?.close()
 		} catch (error) {
-			this.log.error('catch clear sse error', error)
+			this.logManager(LogLevel.ERROR, 'catch clear sse error', error)
 		}
 	}
 	initWs() {
@@ -278,5 +281,8 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			return this.httpErrorMap.get(error)
 		}
 		return 'unknown error'
+	}
+	logManager(logLevel: LogLevel, message: string, ...parameters: any[]) {
+		ihostConfig.enableDeviceLog && this.log.log(logLevel, message, ...parameters)
 	}
 }

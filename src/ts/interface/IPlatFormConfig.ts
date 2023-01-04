@@ -6,7 +6,8 @@ export interface IPlatFormConfig {
 	ihostName?: string,
 	at?: string,
 	isValid?: boolean,
-	devices?: IDeviceConfig[]
+	devices?: IDeviceConfig[],
+	enableDeviceLog?: boolean
 }
 
 export interface IDeviceConfig {

@@ -42,11 +42,12 @@ export class light_accessory extends base_accessory {
 		}
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_TEMPERATURE)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-				.setProps({
-					minValue: 0,
-					maxValue: 100
-				})
+				// .setProps({
+				// 	minValue: 0,
+				// 	maxValue: 100
+				// })
 				.onGet(() => {
+					this.platform.log.info('color-temperature', deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 					return deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
 				})
 				.onSet((value: CharacteristicValue) => {
@@ -106,6 +107,7 @@ export class light_accessory extends base_accessory {
 			} else if (stateKey === 'brightness') {
 				this.service?.updateCharacteristic(this.platform.Characteristic.Brightness, deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
 			} else if (stateKey === 'color-temperature') {
+				this.platform.log.info('updateValue color-temperature', deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 				this.service?.updateCharacteristic(this.platform.Characteristic.ColorTemperature, deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 			} else if (stateKey === 'color-rgb') {
 				const [h, s, v] = (deviceUtils.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
