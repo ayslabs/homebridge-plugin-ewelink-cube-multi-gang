@@ -296,7 +296,7 @@ const devices: Array<any> = [
 
 			"color-temperature": {
 
-				"colorTemperature": 10,
+				"colorTemperature": 140,
 
 				"updated_at": 1670207289561
 

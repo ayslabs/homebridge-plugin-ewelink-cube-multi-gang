@@ -51,11 +51,12 @@ export class base_accessory implements IBaseAccessory {
 				params
 			};
 			this.platform.log.info('-------->', JSON.stringify(httpConfig, null, 2));
-			// const resp = await httpRequest(httpConfig);
-			// this.platform.log.info('<------->', resp);
-			// if (resp.error !== 0) {
-			//     return;
-			// }
+			const resp = await httpRequest(httpConfig);
+			this.platform.log.info('<------->', resp);
+			if (resp.error !== 0) {
+				this.platform.updateAccessory(this.device.serial_number);
+				return;
+			}
 			this.platform.updateAccessory(this.device.serial_number, params.state);
 		} catch (error) {
 			this.platform.log.error('control fail');
