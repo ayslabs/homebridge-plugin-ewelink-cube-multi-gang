@@ -54,8 +54,7 @@ export class outlet_accessory extends base_accessory {
 				})
 		}
 	}
-	updateValue(deviceState?: any): void {
-		this.platform.log.info('outlet_accessory updateValue', JSON.stringify(this.device.state, null, 2));
+	updateValue(): void {
 		const stateArr = Object.keys(this.device.state);
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
@@ -63,14 +62,11 @@ export class outlet_accessory extends base_accessory {
 				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
 			} else if (stateKey === 'toggle') {
 				const toggleItem = this.device.state['toggle'];
-				this.platform.log.info('toggleItem', toggleItem)
 				Object.keys(toggleItem).forEach(channel => {
 					const serviceName = `switchService_${+channel - 1}` as 'switchService_0' | 'switchService_1' | 'switchService_2' | 'switchService_3'
-					this.platform.log.info('serviceName', serviceName, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
 					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
 				})
 			}
 		})
-		this.platform.log.info('this.device.state', JSON.stringify(this.device.state, null, 2))
 	}
 }

@@ -1,4 +1,4 @@
-import { Categories, PlatformAccessory } from 'homebridge';
+import { Categories, LogLevel, PlatformAccessory } from 'homebridge';
 import { HomebridgePlatform } from '../HomebridgePlatform';
 import { IDevice } from '../ts/interface/IDevice';
 import { IBaseAccessory } from '../ts/interface/IBaseAccessory';
@@ -26,14 +26,15 @@ export class base_accessory implements IBaseAccessory {
 			const uuid = platform.api.hap.uuid.generate(device.serial_number);
 			this.accessory = new platform.api.platformAccessory(device.name, uuid, category);
 		} else {
-			this.platform.log.info('Existing Accessory', this.accessory.UUID, this.accessory.displayName);
+			this.platform.logManager(LogLevel.INFO, 'Existing Accessory', this.accessory.UUID, this.accessory.displayName)
 		}
 		//	set fundamental device info
 		this.accessory.getService(this.platform.Service.AccessoryInformation)
-			?.setCharacteristic(this.platform.Characteristic.Manufacturer, device.manufacturer)
-			.setCharacteristic(this.platform.Characteristic.Model, device.model)
+			?.setCharacteristic(this.platform.Characteristic.Manufacturer, 'eWeLink CUBE')
+			// .setCharacteristic(this.platform.Characteristic.Model, device.model)
 			.setCharacteristic(this.platform.Characteristic.SerialNumber, device.serial_number)
-			.setCharacteristic(this.platform.Characteristic.Name, device.name);
+			.setCharacteristic(this.platform.Characteristic.Name, device.name)
+			.setCharacteristic(this.platform.Characteristic.FirmwareRevision, device.firmware_version);
 	}
 
 	//	各子类单独实现功能
@@ -57,16 +58,16 @@ export class base_accessory implements IBaseAccessory {
 				path: `${EHttpPath.DEVICES}/${this.device.serial_number}`,
 				params
 			};
-			this.platform.log.info('-------->', JSON.stringify(httpConfig, null, 2));
 			const resp = await httpRequest(httpConfig);
-			this.platform.log.info('<------->', resp);
+			this.platform.logManager(LogLevel.INFO, 'control device params', params)
+			this.platform.logManager(LogLevel.INFO, 'openapi response', resp)
 			if (resp.error !== 0) {
 				this.platform.updateAccessory(this.device.serial_number);
 				return;
 			}
 			this.platform.updateAccessory(this.device.serial_number, params.state);
 		} catch (error) {
-			this.platform.log.error('control fail');
+			this.platform.logManager(LogLevel.ERROR, 'openapi control fail', error)
 		}
 	}
 }

@@ -31,14 +31,7 @@ export class smoke_accessory extends base_accessory {
 				})
 		}
 	}
-	updateValue(deviceState: any): void {
-		this.platform.log.info('smoake_accessory updateValue', JSON.stringify(this.device.state, null, 2));
-		// let state: any = {}
-		// if (!deviceState) {
-		// 	state = this.device.state
-		// } else {
-		// 	state = deviceState
-		// }
+	updateValue(): void {
 		const stateArr = Object.keys(this.device.state);
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {

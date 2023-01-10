@@ -47,7 +47,6 @@ export class light_accessory extends base_accessory {
 				// 	maxValue: 100
 				// })
 				.onGet(() => {
-					this.platform.log.info('color-temperature', deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 					return deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
 				})
 				.onSet((value: CharacteristicValue) => {
@@ -63,7 +62,6 @@ export class light_accessory extends base_accessory {
 					return h
 				})
 				.onSet((value: CharacteristicValue) => {
-					this.platform.log.info('hue---->', value)
 					this.state.h = value as number
 					this.controlDeviceHSV()
 				})
@@ -74,7 +72,6 @@ export class light_accessory extends base_accessory {
 					return s
 				})
 				.onSet((value: CharacteristicValue) => {
-					this.platform.log.info('saturation---->', value)
 					this.state.s = value as number
 					this.controlDeviceHSV()
 				})
@@ -91,14 +88,7 @@ export class light_accessory extends base_accessory {
 			}, 200)
 		}
 	}
-	updateValue(deviceState: any): void {
-		this.platform.log.info('light_accessory updateValue', JSON.stringify(this.device.state, null, 2));
-		// let state: any = {}
-		// if (!deviceState) {
-		// 	state = this.device.state
-		// } else {
-		// 	state = deviceState
-		// }
+	updateValue(): void {
 		const stateArr = Object.keys(this.device.state);
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
@@ -107,7 +97,6 @@ export class light_accessory extends base_accessory {
 			} else if (stateKey === 'brightness') {
 				this.service?.updateCharacteristic(this.platform.Characteristic.Brightness, deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
 			} else if (stateKey === 'color-temperature') {
-				this.platform.log.info('updateValue color-temperature', deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 				this.service?.updateCharacteristic(this.platform.Characteristic.ColorTemperature, deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 			} else if (stateKey === 'color-rgb') {
 				const [h, s, v] = (deviceUtils.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
