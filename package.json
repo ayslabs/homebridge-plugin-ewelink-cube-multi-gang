@@ -1,7 +1,7 @@
 {
 	"name": "homebridge-plugin-ihost",
 	"displayName": "Plugin DisplayName",
-	"version": "1.0.1",
+	"version": "1.0.11",
 	"description": "",
 	"main": "lib/index.js",
 	"scripts": {
@@ -24,11 +24,11 @@
 		"@types/multicast-dns": "^7.2.1",
 		"@types/ws": "^8.5.3",
 		"homebridge": "^1.6.0",
-		"isomorphic-ws": "^5.0.0",
 		"rimraf": "^3.0.2",
 		"ws": "^8.11.0"
 	},
 	"dependencies": {
+		"isomorphic-ws": "^5.0.0",
 		"@homebridge/plugin-ui-utils": "^0.0.19",
 		"axios": "^1.2.2",
 		"color-convert": "^2.0.1",

@@ -22,12 +22,25 @@ class PluginUiServer extends HomebridgePluginUiServer {
 		})
 		//	根据ip查询
 		this.onRequest('/getDeviceByIp', async (ip: string) => {
-			// this.mdns = makeMdns({
-			// 	ip
-			// })
-			// return this.mdns
-			this.queryDevices()
-			this.pushMdnsDevices()
+			if (!ip) {
+				return {
+					msg: 'invalid params'
+				}
+			}
+			const httpConfig: IHttpConfig = {
+				path: EHttpPath.IHOST_INFO,
+				ip,
+				method: EMethod.GET,
+			}
+			try {
+				const resp = await httpRequest(httpConfig);
+				return resp
+			} catch (error) {
+				return {
+					error: 1000,
+					data: []
+				}
+			}
 		})
 		//	获取 access_token
 		this.onRequest('/getAccessToken', async (ip) => {

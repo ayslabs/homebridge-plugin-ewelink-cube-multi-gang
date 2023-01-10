@@ -11,8 +11,9 @@ class IhostConfig {
 	}
 
 	handleConfig(config: IPlatFormConfig) {
-		this.ip = config.ip ?? '';
-		this.at = config.at ?? '';
+		const { ihost = {} } = config
+		this.ip = ihost.ip ?? '';
+		this.at = ihost.at ?? '';
 		this.enableDeviceLog = config.enableDeviceLog ?? true
 	}
 }

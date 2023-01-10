@@ -32,7 +32,7 @@ export class switch_accessory extends base_accessory {
 				this[service]?.getCharacteristic(this.platform.Characteristic.On)
 					.onGet(() => {
 						const index = switchState.split('_')[1]
-						return deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
+						return this.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
 					})
 					.onSet((value: CharacteristicValue) => {
 						const index = switchState.split('_')[1]
@@ -45,7 +45,7 @@ export class switch_accessory extends base_accessory {
 			this.switchService = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
 			this.switchService?.getCharacteristic(this.platform.Characteristic.On)
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device)
+					return this.getDeviceStateByCap(ECapability.POWER, this.device)
 				})
 				.onSet((value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
@@ -54,7 +54,7 @@ export class switch_accessory extends base_accessory {
 		}
 	}
 	updateValue(deviceState?: any): void {
-		this.platform.log.info('outlet_accessory updateValue', JSON.stringify(this.device.state, null, 2));
+		this.platform.log.info('switch_accessory updateValue', JSON.stringify(this.device.state, null, 2));
 		// let state: any = {}
 		// if (!deviceState) {
 		// 	state = this.device.state
@@ -65,7 +65,7 @@ export class switch_accessory extends base_accessory {
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'power') {
-				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
+				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, this.getDeviceStateByCap(ECapability.POWER, this.device))
 			} else if (stateKey === 'toggle') {
 				const toggleItem = this.device.state['toggle'];
 				this.platform.log.info('toggleItem', toggleItem)

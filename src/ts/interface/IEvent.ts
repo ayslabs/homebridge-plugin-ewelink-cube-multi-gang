@@ -29,9 +29,20 @@ export interface IUpdateDeviceInfo {
  * 设备删除事件
  */
 export interface IDeleteDevice {
-	endpoint: IEndpointObject,
+	endpoint: IEndpointObject
 }
 
+/**
+ * 设备离线事件
+ */
+
+export interface IUpdateDeviceOnline {
+	endpoint: IEndpointObject,
+	payload: {
+		online: boolean
+	}
+
+}
 interface IEndpointObject {
 	serial_number: string,
 	third_serial_number: string

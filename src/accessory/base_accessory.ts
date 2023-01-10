@@ -1,6 +1,6 @@
 import { Categories, PlatformAccessory } from 'homebridge';
 import { HomebridgePlatform } from '../HomebridgePlatform';
-import { IDevice, IDeviceState } from '../ts/interface/IDevice';
+import { IDevice } from '../ts/interface/IDevice';
 import { IBaseAccessory } from '../ts/interface/IBaseAccessory';
 import ihostConfig from '../config/IhostConfig';
 import httpRequest from '../service/httpRequest';
@@ -8,6 +8,7 @@ import { IHttpConfig } from '../ts/interface/IHttpConfig';
 import { EMethod } from '../ts/enum/EMethod';
 import { EHttpPath } from '../ts/enum/EHttpPath';
 import deviceUtils from '../utils/deviceUtils';
+import { ECapability } from '../ts/enum/ECapability';
 
 export class base_accessory implements IBaseAccessory {
 	platform: HomebridgePlatform;
@@ -34,12 +35,18 @@ export class base_accessory implements IBaseAccessory {
 			.setCharacteristic(this.platform.Characteristic.SerialNumber, device.serial_number)
 			.setCharacteristic(this.platform.Characteristic.Name, device.name);
 	}
-	initDeviceState(state: IDeviceState, device: IDevice) {
-		return deviceUtils.getDeviceState(state, device);
-	}
+
 	//	各子类单独实现功能
 	mountService() { }
 	updateValue(params?: any) { }
+	getDeviceStateByCap(capability: ECapability, device: IDevice, index?: number) {
+		const { online = false } = device;
+		if (!online) {
+			throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE)
+		}
+		return deviceUtils.getDeviceStateByCap(capability, device, index)
+	}
+
 	//	更改设备状态请求
 	async sendToDevice(params: any) {
 		try {

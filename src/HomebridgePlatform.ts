@@ -6,7 +6,7 @@ import { ECategory } from "./ts/enum/ECategory";
 import { IBaseAccessory } from "./ts/interface/IBaseAccessory";
 import { IDevice } from "./ts/interface/IDevice";
 import { IPlatFormConfig, IDeviceConfig } from "./ts/interface/IPlatFormConfig";
-import { IResponseDeviceObject, IUpdateDeviceState, IDeleteDevice } from './ts/interface/IEvent'
+import { IResponseDeviceObject, IUpdateDeviceState, IDeleteDevice, IUpdateDeviceOnline } from './ts/interface/IEvent'
 import WebSocket from 'isomorphic-ws';
 import EventSource from 'eventsource'
 import { IHttpConfig } from "./ts/interface/IHttpConfig";
@@ -14,6 +14,7 @@ import { EHttpPath } from "./ts/enum/EHttpPath";
 import { EMethod } from "./ts/enum/EMethod";
 import httpRequest from "./service/httpRequest";
 import ihostConfig from "./config/IhostConfig";
+import deviceUtils from "./utils/deviceUtils";
 export class HomebridgePlatform implements DynamicPlatformPlugin {
 	public readonly Service: typeof Service = this.api.hap.Service;
 	public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
@@ -34,7 +35,9 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			this.logManager(LogLevel.INFO, '----Executed didFinishLaunching callback----')
 			// return;
 			//  TODO
-			const { ip, at, devices = [] } = this.config
+			const { ihost = {} } = this.config
+
+			const { ip = '', at = '', devices = [] } = ihost
 
 			//	1. 确认是否有可用 ihost 设备,ip at 有效
 			if (!ip || !at) {
@@ -69,14 +72,14 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 				for (let device of filterDevices) {
 					this.transferDevice(device)
 				}
+				//	init server
+				// this.initWs()
+				this.initSSE()
 			} catch (error) {
 				this.logManager(LogLevel.WARN, '----Unexpected error----', error)
 				return;
 			}
 
-			//	init server
-			this.initWs()
-			this.initSSE()
 		})
 		this.api.on(APIEvent.SHUTDOWN, () => {
 			//	close server
@@ -125,6 +128,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		this.accessories.set(accessory.UUID, accessory);
 	}
 	transferDevice(device: IDevice) {
+		deviceUtils.setDeviceName(device);
 		let category = device.display_category;
 		const uuid = this.api.hap.uuid.generate(device.serial_number);
 		//	search cache accessory
@@ -172,6 +176,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 	//	add accessory
 	addAccessory(device: IDevice) {
+		deviceUtils.setDeviceName(device)
 		this.logManager(LogLevel.INFO, `add accessory ${device.name}`)
 		this.transferDevice(device)
 	}
@@ -184,7 +189,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 
 	initSSE() {
-		const url = `http://${ihostConfig.ip}/${EHttpPath.SSE}?access_token=${ihostConfig.at}`
+		const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
 		try {
 			this.event = new EventSource(url);
 			this.event.onopen = (event) => {
@@ -199,7 +204,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			})
 			this.event.addEventListener('device#v1#updateDeviceState', (event) => {
 				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceState;
-				this.updateAccessory(serial_number, payload, true)
+				this.updateAccessory(serial_number, payload, false)
+			})
+			this.event.addEventListener('device#v1#updateDeviceOnline', (event) => {
+				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceOnline;
+				this.updateAccessory(serial_number, payload, false)
 			})
 			this.event.addEventListener('device#v1#deleteDevice', (event) => {
 				const { endpoint: { serial_number } } = JSON.parse(event.data) as IDeleteDevice;
@@ -217,6 +226,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		try {
 			this.event?.removeEventListener('device#v1#addDevice', () => { })
 			this.event?.removeEventListener('device#v1#updateDeviceState', () => { })
+			this.event?.removeEventListener('device#v1#updateDeviceOnline', () => { })
 			this.event?.removeEventListener('device#v1#deleteDevice', () => { })
 			this.event?.close()
 		} catch (error) {
@@ -236,8 +246,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			case 'add':
 				break;
 			case 'update':
-				this.updateAccessory(receiveMsg.serial_number, receiveMsg.params, true)
+				this.updateAccessory(receiveMsg.serial_number, receiveMsg.params, false)
 				break;
+			case 'online':
+				this.updateAccessory(receiveMsg.serial_number, receiveMsg.params, false)
+				break
 			case 'delete':
 				const uuid = this.api.hap.uuid.generate(receiveMsg.serial_number);
 				const accessory = this.accessories.get(uuid);
@@ -265,8 +278,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			if (fullState) {
 				accessory.device.state = params
 			} else {
-				//	hb control device, change the device state
-				if (!params.toggle) {
+				//	online judge
+				if (params.hasOwnProperty('online')) {
+					Object.assign(accessory.device, params)
+				} else if (!params.toggle) {
+					//	hb control device, change the device state
 					Object.assign(accessory.device.state, params)
 				} else {
 					const toggleItem = params['toggle'];

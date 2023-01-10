@@ -37,69 +37,69 @@ function renderServiceByCapability(device: IDevice, capability: ECapability) {
 	return capabilities.some((item) => item.capability === capability);
 }
 
-const DeviceStateMap = new Map<keyof IDeviceState, (device: IDevice) => any>([
-	[
-		'online',
-		(device: IDevice) => _.get(device, 'online', false)
-	],
-	[
-		'switch',
-		(device: IDevice) => _.get(device, ['state', 'powerState'], 'off') === 'on'
-	],
-	[
-		'switch_0',
-		(device: IDevice) => _.get(device, ['state', 'toggle', '1', 'toggleState'], 'off') === 'on'
-	],
-	[
-		'switch_1',
-		(device: IDevice) => _.get(device, ['state', 'toggle', '2', 'toggleState'], 'off') === 'on'
-	],
-	[
-		'switch_2',
-		(device: IDevice) => _.get(device, ['state', 'toggle', '3', 'toggleState'], 'off') === 'on'
-	],
-	[
-		'switch_3',
-		(device: IDevice) => _.get(device, ['state', 'toggle', '4', 'toggleState'], 'off') === 'on'
-	],
-	[
-		'battery',
-		(device: IDevice) => _.get(device, ['state', 'battery', 'battery'], 0)
-	],
-	[
-		'percent',
-		(device: IDevice) => _.get(device, ['state', 'percentage', 'percentage'], 100)
-	],
-	[
-		'detected',
-		(device: IDevice) => _.get(device, ['state', 'detect', 'detected'], true)
-	],
-	[
-		'brightness',
-		(device: IDevice) => _.get(device, ['state', 'brightness', 'brightness'], 100)
-	],
-	[
-		'colorTemperature',
-		(device: IDevice) => _.get(device, ['state', 'color-temperature', 'colorTemperature'], 50)
-	],
-	[
-		'temperature',
-		(device: IDevice) => _.get(device, ['state', 'temperature', 'temperature'], 26.5)
-	],
-	[
-		'humidity',
-		(device: IDevice) => _.get(device, ['state', 'humidity', 'humidity'], 50)
-	]
-]);
-// 初始化设备状态
-function getDeviceState(state: IDeviceState, device: IDevice) {
-	const res: IDeviceState = {};
-	const props = Object.keys(state) as (keyof IDeviceState)[];
-	props.forEach((prop) => {
-		res[prop] = DeviceStateMap.get(prop)!(device);
-	});
-	return res;
-}
+// const DeviceStateMap = new Map<keyof IDeviceState, (device: IDevice) => any>([
+// 	[
+// 		'online',
+// 		(device: IDevice) => _.get(device, 'online', false)
+// 	],
+// 	[
+// 		'switch',
+// 		(device: IDevice) => _.get(device, ['state', 'powerState'], 'off') === 'on'
+// 	],
+// 	[
+// 		'switch_0',
+// 		(device: IDevice) => _.get(device, ['state', 'toggle', '1', 'toggleState'], 'off') === 'on'
+// 	],
+// 	[
+// 		'switch_1',
+// 		(device: IDevice) => _.get(device, ['state', 'toggle', '2', 'toggleState'], 'off') === 'on'
+// 	],
+// 	[
+// 		'switch_2',
+// 		(device: IDevice) => _.get(device, ['state', 'toggle', '3', 'toggleState'], 'off') === 'on'
+// 	],
+// 	[
+// 		'switch_3',
+// 		(device: IDevice) => _.get(device, ['state', 'toggle', '4', 'toggleState'], 'off') === 'on'
+// 	],
+// 	[
+// 		'battery',
+// 		(device: IDevice) => _.get(device, ['state', 'battery', 'battery'], 0)
+// 	],
+// 	[
+// 		'percent',
+// 		(device: IDevice) => _.get(device, ['state', 'percentage', 'percentage'], 100)
+// 	],
+// 	[
+// 		'detected',
+// 		(device: IDevice) => _.get(device, ['state', 'detect', 'detected'], true)
+// 	],
+// 	[
+// 		'brightness',
+// 		(device: IDevice) => _.get(device, ['state', 'brightness', 'brightness'], 100)
+// 	],
+// 	[
+// 		'colorTemperature',
+// 		(device: IDevice) => _.get(device, ['state', 'color-temperature', 'colorTemperature'], 50)
+// 	],
+// 	[
+// 		'temperature',
+// 		(device: IDevice) => _.get(device, ['state', 'temperature', 'temperature'], 26.5)
+// 	],
+// 	[
+// 		'humidity',
+// 		(device: IDevice) => _.get(device, ['state', 'humidity', 'humidity'], 50)
+// 	]
+// ]);
+// // 初始化设备状态
+// function getDeviceState(state: IDeviceState, device: IDevice) {
+// 	const res: IDeviceState = {};
+// 	const props = Object.keys(state) as (keyof IDeviceState)[];
+// 	props.forEach((prop) => {
+// 		res[prop] = DeviceStateMap.get(prop)!(device);
+// 	});
+// 	return res;
+// }
 
 /**
  * 获取设备更新指令
@@ -297,4 +297,11 @@ function getDeviceSendState(capability: ECapability, params: any) {
 		state: stateConfigGetter(params)
 	}
 }
-export default { getMultiDeviceChannel, renderServiceByCapability, getDeviceState, getDeviceStateByCap, getDeviceSendState };
+
+/**
+ * default device name
+ */
+export function setDeviceName(device: IDevice) {
+	!device.name && (device.name = device.manufacturer + device.display_category)
+}
+export default { getMultiDeviceChannel, renderServiceByCapability, getDeviceStateByCap, getDeviceSendState, setDeviceName };
