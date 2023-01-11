@@ -101,7 +101,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 	//	处理 openapi设备 与 config.json配置文件中的设备 的对比，筛选出可以注册到hb的设备
 	handleDevice(openDevices: IDevice[], devices: IDeviceConfig[]) {
-		if (!devices || !devices.length || !openDevices) {
+		if (!openDevices || !openDevices.length) {
 			return []
 		}
 		const finalDevice: IDevice[] = []
@@ -201,7 +201,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
 	initSSE() {
 		const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
-		this.logManager(LogLevel.INFO, 'sse url', url)
+		// this.logManager(LogLevel.INFO, 'sse url', url)
 		try {
 			this.event = new EventSource(url);
 			this.event.onopen = (event) => {

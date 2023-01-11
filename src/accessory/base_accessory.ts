@@ -59,7 +59,7 @@ export class base_accessory implements IBaseAccessory {
 				params
 			};
 			const resp = await httpRequest(httpConfig);
-			this.platform.logManager(LogLevel.INFO, 'control device params', params)
+			this.platform.logManager(LogLevel.INFO, 'control device params', JSON.stringify(params))
 			this.platform.logManager(LogLevel.INFO, 'openapi response', resp)
 			if (resp.error !== 0) {
 				this.platform.updateAccessory(this.device.serial_number);

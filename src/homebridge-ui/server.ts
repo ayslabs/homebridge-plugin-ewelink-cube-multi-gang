@@ -8,13 +8,11 @@ import { EHttpPath } from '../ts/enum/EHttpPath';
 
 class PluginUiServer extends HomebridgePluginUiServer {
 
-	public mdnsDevices: Map<string, { ip: string, name: string }> = new Map()
+	public mdnsDevices: Map<string, { ip: string, name: string, mac: string }> = new Map()
 	public mdns: MulticastDNS | undefined = undefined
 	constructor() {
 		super();
-		this.mdns = makeMdns({
-			// interface: '192.168.2.25'
-		})
+		this.mdns = makeMdns()
 		//	开启mdns查询
 		this.onRequest('/queryMdns', async () => {
 			this.queryDevices();
@@ -22,25 +20,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
 		})
 		//	根据ip查询
 		this.onRequest('/getDeviceByIp', async (ip: string) => {
-			if (!ip) {
-				return {
-					msg: 'invalid params'
-				}
-			}
-			const httpConfig: IHttpConfig = {
-				path: EHttpPath.IHOST_INFO,
-				ip,
-				method: EMethod.GET,
-			}
-			try {
-				const resp = await httpRequest(httpConfig);
-				return resp
-			} catch (error) {
-				return {
-					error: 1000,
-					data: []
-				}
-			}
+			return await this.getDeviceByIp(ip)
 		})
 		//	获取 access_token
 		this.onRequest('/getAccessToken', async (ip) => {
@@ -97,14 +77,18 @@ class PluginUiServer extends HomebridgePluginUiServer {
 	}
 	//	主动推送mdns查询到的设备给到前端
 	pushMdnsDevices() {
-		this.mdns?.on('response', (response) => {
+		this.mdns?.on('response', async (response) => {
 			const { answers } = response as { answers: IMdnsResp[] };
 			// this.pushEvent('getMdnsDevices', answers)
 			if (!JSON.stringify(answers).includes('ihost')) return;
 			for (let answer of answers) {
 				if (answer.name.includes('ihost')) {
-					const mac = ''
-					!this.mdnsDevices.get(answer.name) && this.mdnsDevices.set(answer.name, { ip: answer.data, name: answer.name })
+					const ip = answer.data
+					const response = await this.getDeviceByIp(ip);
+					if (response.error === 0 && response.data) {
+						const { mac } = response.data as { mac: string, ip: string }
+						!this.mdnsDevices.get(mac) && this.mdnsDevices.set(mac, { ip, mac, name: answer.name })
+					}
 				}
 			}
 			if (this.mdnsDevices.size > 0) {
@@ -122,8 +106,26 @@ class PluginUiServer extends HomebridgePluginUiServer {
 			],
 		})
 	}
-	queryDeviceByIp(ip: string) {
-		this.mdns?.query('', { port: 0, address: ip })
+	async getDeviceByIp(ip: string) {
+		if (!ip) {
+			return {
+				msg: 'invalid params'
+			}
+		}
+		const httpConfig: IHttpConfig = {
+			path: EHttpPath.IHOST_INFO,
+			ip,
+			method: EMethod.GET,
+		}
+		try {
+			const resp = await httpRequest(httpConfig);
+			return resp
+		} catch (error) {
+			return {
+				error: 1000,
+				data: []
+			}
+		}
 	}
 }
 
