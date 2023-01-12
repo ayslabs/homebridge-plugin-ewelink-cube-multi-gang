@@ -63,7 +63,7 @@ export class switch_accessory extends base_accessory {
 				const toggleItem = this.device.state['toggle'];
 				Object.keys(toggleItem).forEach(channel => {
 					const serviceName = `switchService_${+channel - 1}` as 'switchService_0' | 'switchService_1' | 'switchService_2' | 'switchService_3'
-					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
+					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, this.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
 				})
 			}
 		})

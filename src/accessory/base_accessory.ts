@@ -22,6 +22,9 @@ export class base_accessory implements IBaseAccessory {
 		this.category = category;
 		this.device = device;
 
+		if (!this.device.state) {
+			Object.assign(this.device, { state: {} })
+		}
 		if (!this.accessory) {
 			const uuid = platform.api.hap.uuid.generate(device.serial_number);
 			this.accessory = new platform.api.platformAccessory(device.name, uuid, category);
@@ -61,11 +64,11 @@ export class base_accessory implements IBaseAccessory {
 			const resp = await httpRequest(httpConfig);
 			this.platform.logManager(LogLevel.INFO, 'control device params', JSON.stringify(params))
 			this.platform.logManager(LogLevel.INFO, 'openapi response', resp)
-			if (resp.error !== 0) {
-				this.platform.updateAccessory(this.device.serial_number);
+			if (resp && resp.error === 0) {
+				this.platform.updateAccessory(this.device.serial_number, params.state);
 				return;
 			}
-			this.platform.updateAccessory(this.device.serial_number, params.state);
+			this.platform.updateAccessory(this.device.serial_number);
 		} catch (error) {
 			this.platform.logManager(LogLevel.ERROR, 'openapi control fail', error)
 		}

@@ -37,70 +37,6 @@ function renderServiceByCapability(device: IDevice, capability: ECapability) {
 	return capabilities.some((item) => item.capability === capability);
 }
 
-// const DeviceStateMap = new Map<keyof IDeviceState, (device: IDevice) => any>([
-// 	[
-// 		'online',
-// 		(device: IDevice) => _.get(device, 'online', false)
-// 	],
-// 	[
-// 		'switch',
-// 		(device: IDevice) => _.get(device, ['state', 'powerState'], 'off') === 'on'
-// 	],
-// 	[
-// 		'switch_0',
-// 		(device: IDevice) => _.get(device, ['state', 'toggle', '1', 'toggleState'], 'off') === 'on'
-// 	],
-// 	[
-// 		'switch_1',
-// 		(device: IDevice) => _.get(device, ['state', 'toggle', '2', 'toggleState'], 'off') === 'on'
-// 	],
-// 	[
-// 		'switch_2',
-// 		(device: IDevice) => _.get(device, ['state', 'toggle', '3', 'toggleState'], 'off') === 'on'
-// 	],
-// 	[
-// 		'switch_3',
-// 		(device: IDevice) => _.get(device, ['state', 'toggle', '4', 'toggleState'], 'off') === 'on'
-// 	],
-// 	[
-// 		'battery',
-// 		(device: IDevice) => _.get(device, ['state', 'battery', 'battery'], 0)
-// 	],
-// 	[
-// 		'percent',
-// 		(device: IDevice) => _.get(device, ['state', 'percentage', 'percentage'], 100)
-// 	],
-// 	[
-// 		'detected',
-// 		(device: IDevice) => _.get(device, ['state', 'detect', 'detected'], true)
-// 	],
-// 	[
-// 		'brightness',
-// 		(device: IDevice) => _.get(device, ['state', 'brightness', 'brightness'], 100)
-// 	],
-// 	[
-// 		'colorTemperature',
-// 		(device: IDevice) => _.get(device, ['state', 'color-temperature', 'colorTemperature'], 50)
-// 	],
-// 	[
-// 		'temperature',
-// 		(device: IDevice) => _.get(device, ['state', 'temperature', 'temperature'], 26.5)
-// 	],
-// 	[
-// 		'humidity',
-// 		(device: IDevice) => _.get(device, ['state', 'humidity', 'humidity'], 50)
-// 	]
-// ]);
-// // 初始化设备状态
-// function getDeviceState(state: IDeviceState, device: IDevice) {
-// 	const res: IDeviceState = {};
-// 	const props = Object.keys(state) as (keyof IDeviceState)[];
-// 	props.forEach((prop) => {
-// 		res[prop] = DeviceStateMap.get(prop)!(device);
-// 	});
-// 	return res;
-// }
-
 /**
  * 获取设备更新指令
  * power => powerState
@@ -115,16 +51,12 @@ function renderServiceByCapability(device: IDevice, capability: ECapability) {
 const deviceCapaStateMap = new Map<
 	ECapability, {
 		getter: (params: any) => any,
-		parser: (params: any) => any,
 		getDeviceSend?: (params: any) => any
 	}>([
 		[ECapability.POWER, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice };
 				return _.get(device, ['state', 'power', 'powerState'], 'off') === 'on'
-			},
-			parser: (params) => {
-				return _.get(params, ['state', 'power', 'powerState'], 'off') === 'on'
 			},
 			getDeviceSend: (params) => {
 				const { value = false } = params;
@@ -139,13 +71,6 @@ const deviceCapaStateMap = new Map<
 			getter: (params) => {
 				const { device, index } = params as { device: IDevice, index: number }
 				return _.get(device, ['state', 'toggle', `${index + 1}`, 'toggleState'], 'off') === 'on'
-			},
-			parser: (params) => {
-				const { state: { toggle = {} } } = params;
-				const index = Object.keys(toggle).length ? Object.keys(toggle)[0] : 0
-				if (index) {
-					return _.get(toggle, [`${+index + 1}`, 'toggleState'], 'off')
-				}
 			},
 			getDeviceSend: (params) => {
 				const { value, index } = params
@@ -163,9 +88,6 @@ const deviceCapaStateMap = new Map<
 				const { device } = params as { device: IDevice, index: string }
 				return _.get(device, ['state', 'brightness', 'brightness'], 1)
 			},
-			parser: (params) => {
-				return _.get(params, ['state', 'brightness', 'brightness'], 1)
-			},
 			getDeviceSend: (params) => {
 				const { value = 1 } = params;
 				return {
@@ -179,9 +101,6 @@ const deviceCapaStateMap = new Map<
 			getter: (params) => {
 				const { device } = params as { device: IDevice, index: string }
 				return _.get(device, ['state', 'color-temperature', 'colorTemperature'], 50)
-			},
-			parser: (params) => {
-				return _.get(params, ['state', 'color-temperature', 'colorTemperature'], 50)
 			},
 			getDeviceSend: (params) => {
 				const { value = 1 } = params;
@@ -197,9 +116,6 @@ const deviceCapaStateMap = new Map<
 				const { device } = params as { device: IDevice }
 				const { red, green, blue } = _.get(device, ['state', 'color-rgb'], { red: 255, green: 0, blue: 0 })
 				return colotConvertUtils.rgb2hsv([red, green, blue])
-			},
-			parser: (params) => {
-				return _.get(params, ['state', 'color-rgb'])
 			},
 			getDeviceSend: (params) => {
 				const { h, s, v } = params;
@@ -218,9 +134,6 @@ const deviceCapaStateMap = new Map<
 				const { device } = params as { device: IDevice }
 				return _.get(device, ['state', 'percentage', 'percentage'], 1)
 			},
-			parser: (params) => {
-				return _.get(params, ['state', 'percentage', 'percentage'], 1)
-			},
 			getDeviceSend(params) {
 				const { value = 1 } = params
 				return {
@@ -233,10 +146,8 @@ const deviceCapaStateMap = new Map<
 		[ECapability.BATTERY, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice }
-				return _.get(device, ['state', 'battery', 'battery'], 1)
-			},
-			parser(params) {
-				return _.get(params, ['state', 'battery', 'battery'], 1)
+				const battery = _.get(device, ['state', 'battery', 'battery'], -1)
+				return battery !== -1 ? battery : 0
 			},
 		}],
 		[ECapability.DETECT, {
@@ -244,26 +155,19 @@ const deviceCapaStateMap = new Map<
 				const { device } = params as { device: IDevice }
 				return _.get(device, ['state', 'detect', 'detected'], false)
 			},
-			parser(params) {
-				return _.get(params, ['state', 'detect', 'detected'], false)
-			},
 		}],
 		[ECapability.HUMIDITY, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice }
-				return _.get(device, ['state', 'humidity', 'humidity'], 20)
-			},
-			parser(params) {
-				return _.get(params, ['state', 'humidity', 'humidity'], 20)
+				const humidity = _.get(device, ['state', 'humidity', 'humidity'], '--')
+				return humidity.toFixed(1)
 			},
 		}],
 		[ECapability.TEMPERATURE, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice }
-				return _.get(device, ['state', 'temperature', 'temperature'], 20)
-			},
-			parser(params) {
-				return _.get(params, ['state', 'temperature', 'temperature'], 20)
+				const temperature = _.get(device, ['state', 'temperature', 'temperature'], '--')
+				return temperature.toFixed(1)
 			},
 		}],
 		[ECapability.PRESS, {
@@ -271,9 +175,6 @@ const deviceCapaStateMap = new Map<
 				const { device } = params as { device: IDevice }
 				const pressKey = _.get(device, ['state', 'press', 'press'], 'singlePress')
 				return pressKey === 'singlePress' ? 0 : pressKey === 'doublePress' ? 1 : 2
-			},
-			parser(params) {
-				return _.get(params, ['state', 'temperature', 'temperature'], 20)
 			},
 		}],
 	])

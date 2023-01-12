@@ -4,15 +4,18 @@ import { PlatformAccessory, Categories, CharacteristicValue, Service } from 'hom
 import { IDevice } from '../ts/interface/IDevice';
 import { ECapability } from '../ts/enum/ECapability';
 import deviceUtils from '../utils/deviceUtils';
+import _ from 'lodash';
 
 export class light_accessory extends base_accessory {
 
 	service: Service | undefined;
 	state = {
 		h: 0,
-		s: 0
+		s: 0,
+		receiveSse: true
 	}
 	timeout: NodeJS.Timeout | null = null
+	receiveTimeout: NodeJS.Timeout | null = null
 
 	constructor(platform: HomebridgePlatform, accessory: PlatformAccessory | undefined, device: IDevice) {
 		super(platform, accessory, Categories.LIGHTBULB, device);
@@ -32,20 +35,30 @@ export class light_accessory extends base_accessory {
 
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.Brightness)
+				.setProps({
+					minValue: 1
+				})
 				.onGet(() => {
 					return deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device)
 				})
 				.onSet((value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.BRIGHTNESS, { value })
-					this.sendToDevice(params)
+					this.state.receiveSse = false
+					if (this.receiveTimeout) {
+						clearTimeout(this.receiveTimeout)
+					}
+					this.receiveTimeout = setTimeout(() => {
+						this.state.receiveSse = true
+					}, 3000)
+					this.debounceControBrightness(params)
 				});
 		}
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_TEMPERATURE)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-				// .setProps({
-				// 	minValue: 0,
-				// 	maxValue: 100
-				// })
+				.setProps({
+					minValue: 0,
+					maxValue: 100
+				})
 				.onGet(() => {
 					return deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
 				})
@@ -88,13 +101,15 @@ export class light_accessory extends base_accessory {
 			}, 200)
 		}
 	}
-	updateValue(): void {
+	debounceControBrightness = _.debounce(params => this.sendToDevice(params), 100)
+	updateValue(sse: boolean): void {
 		const stateArr = Object.keys(this.device.state);
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'power') {
 				this.service?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
 			} else if (stateKey === 'brightness') {
+				if (!this.state.receiveSse) return;
 				this.service?.updateCharacteristic(this.platform.Characteristic.Brightness, deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
 			} else if (stateKey === 'color-temperature') {
 				this.service?.updateCharacteristic(this.platform.Characteristic.ColorTemperature, deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))

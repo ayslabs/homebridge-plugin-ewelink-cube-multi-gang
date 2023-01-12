@@ -211,14 +211,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 				this.logManager(LogLevel.ERROR, 'init sse error', event)
 			}
 			this.event.addEventListener('device#v1#addDevice', (event) => {
+				this.logManager(LogLevel.INFO, 'add device by sse', JSON.stringify(event))
 				const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
 				this.addAccessory(payload)
 			})
 			this.event.addEventListener('device#v1#updateDeviceState', (event) => {
+				this.logManager(LogLevel.INFO, 'update device state by sse', JSON.stringify(event))
 				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceState;
 				this.updateAccessory(serial_number, payload, true)
 			})
 			this.event.addEventListener('device#v1#updateDeviceOnline', (event) => {
+				this.logManager(LogLevel.INFO, 'update device online by sse', JSON.stringify(event))
 				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceOnline;
 				this.updateAccessory(serial_number, payload)
 			})
@@ -250,21 +253,29 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		const uuid = this.api.hap.uuid.generate(serial_number);
 		const accessory = this.formatAccessory.get(uuid)
 		if (accessory && typeof accessory.updateValue === 'function') {
-			if (!params) {
-				accessory.updateValue()
-				return;
+			// this.logManager(LogLevel.INFO, 'update ---- >', params)
+			try {
+				if (!params) {
+					accessory.updateValue()
+					return;
+				}
+				//	online judge
+				if (params.hasOwnProperty('online')) {
+					Object.assign(accessory.device, params)
+				} else if (!params.toggle) {
+					//	hb control device, change the device state
+					Object.assign(accessory.device.state, params)
+				} else {
+					const toggleItem = params['toggle'];
+					if (!accessory.device.state['toggle']) {
+						accessory.device.state.toggle = {}
+					}
+					Object.assign(accessory.device.state['toggle'], toggleItem)
+				}
+				accessory.updateValue(sse)
+			} catch (error) {
+
 			}
-			//	online judge
-			if (params.hasOwnProperty('online')) {
-				Object.assign(accessory.device, params)
-			} else if (!params.toggle) {
-				//	hb control device, change the device state
-				Object.assign(accessory.device.state, params)
-			} else {
-				const toggleItem = params['toggle'];
-				Object.assign(accessory.device.state['toggle'], toggleItem)
-			}
-			accessory.updateValue(sse)
 		}
 	}
 	handleHttpError(error: number) {
