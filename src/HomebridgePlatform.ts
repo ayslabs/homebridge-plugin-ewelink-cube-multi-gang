@@ -14,6 +14,20 @@ import { EMethod } from "./ts/enum/EMethod";
 import httpRequest from "./service/httpRequest";
 import ihostConfig from "./config/IhostConfig";
 import deviceUtils from "./utils/deviceUtils";
+
+const categoryAccessoryMap = new Map<string[], any>([
+    [[ECategory.SWITCH], DeviceType.switch_accessory],
+    [[ECategory.PLUG], DeviceType.outlet_accessory],
+    [[ECategory.LIGHT], DeviceType.light_accessory],
+    [[ECategory.SMOKE_DETECTOR], DeviceType.smoke_accessory],
+    [[ECategory.WATER_LEAK_DETECTOR], DeviceType.water_detector_accessory],
+    [[ECategory.MOTION_SENSOR], DeviceType.motion_accessory],
+    [[ECategory.CONTACT_SENSOR], DeviceType.door_accessory],
+    [[ECategory.CURTAIN], DeviceType.curtain_accessory],
+    [[ECategory.TEMPERATURE_HUMIDITY_SENSOR, ECategory.TEMPERATURE_SENSOR, ECategory.HUMIDITY_SENSOR], DeviceType.thermostat_accessory],
+    [[ECategory.BUTTON], DeviceType.button_accessory]
+]);
+
 export class HomebridgePlatform implements DynamicPlatformPlugin {
 	public readonly Service: typeof Service = this.api.hap.Service;
 	public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
@@ -145,31 +159,13 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		//	search cache accessory
 		const cacheAccessory = this.accessories.get(uuid);
 		let deviceAccessory: IBaseAccessory | undefined = undefined
-		// TODO --> Map
-		if (category === ECategory.SWITCH) {
-			deviceAccessory = new DeviceType.switch_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.PLUG) {
-			deviceAccessory = new DeviceType.outlet_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.LIGHT) {
-			deviceAccessory = new DeviceType.light_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.SMOKE_DETECTOR) {
-			deviceAccessory = new DeviceType.smoke_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.WATER_LEAK_DETECTOR) {
-			deviceAccessory = new DeviceType.water_detector_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.MOTION_SENSOR) {
-			deviceAccessory = new DeviceType.motion_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.CONTACT_SENSOR) {
-			deviceAccessory = new DeviceType.door_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.CURTAIN) {
-			deviceAccessory = new DeviceType.curtain_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.TEMPERATURE_HUMIDITY_SENSOR
-			|| category === ECategory.TEMPERATURE_SENSOR
-			|| category === ECategory.HUMIDITY_SENSOR) {
-			deviceAccessory = new DeviceType.thermostat_accessory(this, cacheAccessory, device)
-		} else if (category === ECategory.BUTTON) {
-			deviceAccessory = new DeviceType.button_accessory(this, cacheAccessory, device)
-		}
-		//	TODO
+        for (let categoryArr of categoryAccessoryMap.keys()) {
+            if (categoryArr.includes(category)) {
+                const accessory = categoryAccessoryMap.get(categoryArr)
+                deviceAccessory = new accessory(this, cacheAccessory, device)
+                break
+            }
+        }
 		if (deviceAccessory && typeof deviceAccessory.mountService === 'function') {
 			deviceAccessory.mountService()
 		}
