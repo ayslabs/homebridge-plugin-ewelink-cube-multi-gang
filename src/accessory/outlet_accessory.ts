@@ -33,12 +33,12 @@ export class outlet_accessory extends base_accessory {
 				this[service]?.getCharacteristic(this.platform.Characteristic.On)
 					.onGet(() => {
 						const index = switchState.split('_')[1]
-						return deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
+						return this.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
 					})
-					.onSet((value: CharacteristicValue) => {
+					.onSet(async (value: CharacteristicValue) => {
 						const index = switchState.split('_')[1]
 						const params = deviceUtils.getDeviceSendState(ECapability.TOGGLE, { value, index: +index })
-						this.sendToDevice(params)
+						await this.sendToDevice(params)
 					});
 			}
 		}
@@ -46,11 +46,11 @@ export class outlet_accessory extends base_accessory {
 			this.switchService = this.accessory?.getService(this.platform.Service.Switch) || this.accessory?.addService(this.platform.Service.Switch);
 			this.switchService?.getCharacteristic(this.platform.Characteristic.On)
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device)
+					return this.getDeviceStateByCap(ECapability.POWER, this.device)
 				})
-				.onSet((value: CharacteristicValue) => {
+				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
-					this.sendToDevice(params)
+					await this.sendToDevice(params)
 				})
 		}
 	}
@@ -59,12 +59,12 @@ export class outlet_accessory extends base_accessory {
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'power') {
-				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
+				this.switchService?.updateCharacteristic(this.platform.Characteristic.On, this.getDeviceStateByCap(ECapability.POWER, this.device))
 			} else if (stateKey === 'toggle') {
 				const toggleItem = this.device.state['toggle'];
 				Object.keys(toggleItem).forEach(channel => {
 					const serviceName = `switchService_${+channel - 1}` as 'switchService_0' | 'switchService_1' | 'switchService_2' | 'switchService_3'
-					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
+					this[serviceName]?.updateCharacteristic(this.platform.Characteristic.On, this.getDeviceStateByCap(ECapability.TOGGLE, this.device, +channel - 1))
 				})
 			}
 		})

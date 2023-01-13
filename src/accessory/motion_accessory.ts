@@ -17,18 +17,18 @@ export class motion_accessory extends base_accessory {
 		this.service = this.accessory?.getService(this.platform.Service.MotionSensor) || this.accessory?.addService(this.platform.Service.MotionSensor);
 		this.service?.getCharacteristic(this.platform.Characteristic.MotionDetected)
 			.onGet(() => {
-				return deviceUtils.getDeviceStateByCap(ECapability.DETECT, this.device)
+				return this.getDeviceStateByCap(ECapability.DETECT, this.device)
 			})
 
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BATTERY)) {
 			this.batteryService = this.accessory?.getService(this.platform.Service.Battery) || this.accessory?.addService(this.platform.Service.Battery);
 			this.batteryService?.getCharacteristic(this.platform.Characteristic.StatusLowBattery)
-				.onGet(() => (+deviceUtils.getDeviceStateByCap(ECapability.BATTERY, this.device) < 20 ? 1 : 0));
+				.onGet(() => (+this.getDeviceStateByCap(ECapability.BATTERY, this.device) < 20 ? 1 : 0));
 
 			this.batteryService
 				?.getCharacteristic(this.platform.Characteristic.BatteryLevel)
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.BATTERY, this.device)
+					return this.getDeviceStateByCap(ECapability.BATTERY, this.device)
 				})
 		}
 	}
@@ -37,10 +37,10 @@ export class motion_accessory extends base_accessory {
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'detect') {
-				this.service?.updateCharacteristic(this.platform.Characteristic.MotionDetected, deviceUtils.getDeviceStateByCap(ECapability.DETECT, this.device))
+				this.service?.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.getDeviceStateByCap(ECapability.DETECT, this.device))
 			} else if (stateKey === 'battery') {
-				this.batteryService?.updateCharacteristic(this.platform.Characteristic.BatteryLevel, deviceUtils.getDeviceStateByCap(ECapability.BATTERY, this.device))
-				this.batteryService?.updateCharacteristic(this.platform.Characteristic.StatusLowBattery, +deviceUtils.getDeviceStateByCap(ECapability.BATTERY, this.device) < 20 ? 1 : 0)
+				this.batteryService?.updateCharacteristic(this.platform.Characteristic.BatteryLevel, this.getDeviceStateByCap(ECapability.BATTERY, this.device))
+				this.batteryService?.updateCharacteristic(this.platform.Characteristic.StatusLowBattery, +this.getDeviceStateByCap(ECapability.BATTERY, this.device) < 20 ? 1 : 0)
 			}
 		})
 	}

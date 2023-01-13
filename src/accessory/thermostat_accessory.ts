@@ -20,14 +20,14 @@ export class thermostat_accessory extends base_accessory {
 					minStep: 0.1
 				})
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.TEMPERATURE, this.device)
+					return this.getDeviceStateByCap(ECapability.TEMPERATURE, this.device)
 				});
 		}
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.HUMIDITY)) {
 			this.humidityService = this.accessory?.getService(this.platform.Service.HumiditySensor) || this.accessory?.addService(this.platform.Service.HumiditySensor);
 			this.humidityService?.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.HUMIDITY, this.device)
+					return this.getDeviceStateByCap(ECapability.HUMIDITY, this.device)
 				});
 		}
 	}
@@ -36,10 +36,10 @@ export class thermostat_accessory extends base_accessory {
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'temperature') {
-				this.service?.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, deviceUtils.getDeviceStateByCap(ECapability.TEMPERATURE, this.device))
+				this.service?.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.getDeviceStateByCap(ECapability.TEMPERATURE, this.device))
 				// this.service?.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, 29.2)
 			} else if (stateKey === 'humidity') {
-				this.humidityService?.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, deviceUtils.getDeviceStateByCap(ECapability.HUMIDITY, this.device))
+				this.humidityService?.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.getDeviceStateByCap(ECapability.HUMIDITY, this.device))
 			}
 		})
 	}

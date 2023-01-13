@@ -1,9 +1,10 @@
 import { base_accessory } from './base_accessory';
 import { HomebridgePlatform } from '../HomebridgePlatform';
-import { PlatformAccessory, Categories, CharacteristicValue, Service } from 'homebridge';
+import { PlatformAccessory, Categories, CharacteristicValue, Service, LogLevel } from 'homebridge';
 import { IDevice, IDeviceState } from '../ts/interface/IDevice';
 import deviceUtils from '../utils/deviceUtils';
 import { ECapability } from '../ts/enum/ECapability';
+import _ from 'lodash';
 
 export class curtain_accessory extends base_accessory {
 
@@ -17,16 +18,23 @@ export class curtain_accessory extends base_accessory {
 		this.service = this.accessory?.getService(this.platform.Service.WindowCovering) || this.accessory?.addService(this.platform.Service.WindowCovering);
 		this.service?.getCharacteristic(this.platform.Characteristic.CurrentPosition)
 			.onGet(() => {
-				return deviceUtils.getDeviceStateByCap(ECapability.PERCENTAGE, this.device)
+				return this.getDeviceStateByCap(ECapability.PERCENTAGE, this.device)
 			});
 		this.service?.getCharacteristic(this.platform.Characteristic.PositionState).onGet(() => 2);
 		this.service?.getCharacteristic(this.platform.Characteristic.TargetPosition)
 			.onGet(() => {
-				return deviceUtils.getDeviceStateByCap(ECapability.PERCENTAGE, this.device)
+				return this.getDeviceStateByCap(ECapability.PERCENTAGE, this.device)
 			})
-			.onSet((value: CharacteristicValue) => {
+			.onSet(async (value: CharacteristicValue) => {
+				const isNotCalibration = _.get(this.device, ['state', 'motor-clb', 'motorClb'], 'calibration') === 'calibration';
+				if (isNotCalibration && value && value !== 100) {
+					setTimeout(() => {
+						this.updateValue();
+					}, 200);
+					return
+				}
 				const params = deviceUtils.getDeviceSendState(ECapability.PERCENTAGE, { value })
-				this.sendToDevice(params)
+				await this.sendToDevice(params)
 			});
 	}
 	updateValue(sse = false): void {
@@ -35,10 +43,10 @@ export class curtain_accessory extends base_accessory {
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'percentage') {
 				if (!sse) {
-					this.service?.updateCharacteristic(this.platform.Characteristic.TargetPosition, deviceUtils.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
+					this.service?.updateCharacteristic(this.platform.Characteristic.TargetPosition, this.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
 				} else {
-					this.service?.updateCharacteristic(this.platform.Characteristic.TargetPosition, deviceUtils.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
-					this.service?.updateCharacteristic(this.platform.Characteristic.CurrentPosition, deviceUtils.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
+					this.service?.updateCharacteristic(this.platform.Characteristic.TargetPosition, this.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
+					this.service?.updateCharacteristic(this.platform.Characteristic.CurrentPosition, this.getDeviceStateByCap(ECapability.PERCENTAGE, this.device))
 				}
 			}
 		})

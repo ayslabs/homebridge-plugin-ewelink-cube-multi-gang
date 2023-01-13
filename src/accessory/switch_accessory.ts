@@ -34,10 +34,10 @@ export class switch_accessory extends base_accessory {
 						const index = switchState.split('_')[1]
 						return this.getDeviceStateByCap(ECapability.TOGGLE, this.device, +index)
 					})
-					.onSet((value: CharacteristicValue) => {
+					.onSet(async (value: CharacteristicValue) => {
 						const index = switchState.split('_')[1]
 						const params = deviceUtils.getDeviceSendState(ECapability.TOGGLE, { value, index: +index })
-						this.sendToDevice(params)
+						await this.sendToDevice(params)
 					});
 			}
 		}
@@ -47,9 +47,9 @@ export class switch_accessory extends base_accessory {
 				.onGet(() => {
 					return this.getDeviceStateByCap(ECapability.POWER, this.device)
 				})
-				.onSet((value: CharacteristicValue) => {
+				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
-					this.sendToDevice(params)
+					await this.sendToDevice(params)
 				})
 		}
 	}

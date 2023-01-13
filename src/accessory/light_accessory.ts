@@ -25,23 +25,20 @@ export class light_accessory extends base_accessory {
 			this.service = this.accessory!.getService(this.platform.Service.Lightbulb) || this.accessory?.addService(this.platform.Service.Lightbulb);
 			this.service?.getCharacteristic(this.platform.Characteristic.On)
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device)
+					return this.getDeviceStateByCap(ECapability.POWER, this.device)
 				})
-				.onSet((value: CharacteristicValue) => {
+				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
-					this.sendToDevice(params)
+					await this.sendToDevice(params)
 				});
 		}
 
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.Brightness)
-				.setProps({
-					minValue: 1
-				})
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device)
+					return this.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device)
 				})
-				.onSet((value: CharacteristicValue) => {
+				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.BRIGHTNESS, { value })
 					this.state.receiveSse = false
 					if (this.receiveTimeout) {
@@ -50,7 +47,7 @@ export class light_accessory extends base_accessory {
 					this.receiveTimeout = setTimeout(() => {
 						this.state.receiveSse = true
 					}, 3000)
-					this.debounceControBrightness(params)
+					await this.debounceControBrightness(params)
 				});
 		}
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_TEMPERATURE)) {
@@ -60,7 +57,7 @@ export class light_accessory extends base_accessory {
 					maxValue: 100
 				})
 				.onGet(() => {
-					return deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
+					return this.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
 				})
 				.onSet((value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.COLOR_TEMPERATURE, { value })
@@ -71,7 +68,7 @@ export class light_accessory extends base_accessory {
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_RGB)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.Hue)
 				.onGet(() => {
-					const [h, s, v] = (deviceUtils.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
+					const [h, s, v] = (this.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
 					return h
 				})
 				.onSet((value: CharacteristicValue) => {
@@ -81,7 +78,7 @@ export class light_accessory extends base_accessory {
 
 			this.service?.getCharacteristic(this.platform.Characteristic.Saturation)
 				.onGet(() => {
-					const [h, s, v] = (deviceUtils.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
+					const [h, s, v] = (this.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
 					return s
 				})
 				.onSet((value: CharacteristicValue) => {
@@ -93,28 +90,28 @@ export class light_accessory extends base_accessory {
 	}
 	controlDeviceHSV() {
 		if (!this.timeout) {
-			this.timeout = setTimeout(() => {
+			this.timeout = setTimeout(async () => {
 				this.timeout = null;
 				const { h, s } = this.state
 				const params = deviceUtils.getDeviceSendState(ECapability.COLOR_RGB, { h, s, v: 100 })
-				this.sendToDevice(params)
+				await this.sendToDevice(params)
 			}, 200)
 		}
 	}
-	debounceControBrightness = _.debounce(params => this.sendToDevice(params), 100)
-	updateValue(sse: boolean): void {
+	debounceControBrightness = _.debounce(async (params) => await this.sendToDevice(params), 100)
+	updateValue(): void {
+		if (!this.state.receiveSse) return;
 		const stateArr = Object.keys(this.device.state);
 		if (!stateArr.length) return;
 		stateArr.forEach(stateKey => {
 			if (stateKey === 'power') {
-				this.service?.updateCharacteristic(this.platform.Characteristic.On, deviceUtils.getDeviceStateByCap(ECapability.POWER, this.device))
+				this.service?.updateCharacteristic(this.platform.Characteristic.On, this.getDeviceStateByCap(ECapability.POWER, this.device))
 			} else if (stateKey === 'brightness') {
-				if (!this.state.receiveSse) return;
-				this.service?.updateCharacteristic(this.platform.Characteristic.Brightness, deviceUtils.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
+				this.service?.updateCharacteristic(this.platform.Characteristic.Brightness, this.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
 			} else if (stateKey === 'color-temperature') {
-				this.service?.updateCharacteristic(this.platform.Characteristic.ColorTemperature, deviceUtils.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
+				this.service?.updateCharacteristic(this.platform.Characteristic.ColorTemperature, this.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 			} else if (stateKey === 'color-rgb') {
-				const [h, s, v] = (deviceUtils.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
+				const [h, s, v] = (this.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as unknown as [h: number, s: number, v: number])
 				this.service?.updateCharacteristic(this.platform.Characteristic.Hue, h)
 				this.service?.updateCharacteristic(this.platform.Characteristic.Saturation, s)
 			}

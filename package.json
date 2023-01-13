@@ -1,7 +1,7 @@
 {
-	"name": "homebridge-plugin-ihost",
-	"displayName": "Plugin DisplayName",
-	"version": "1.0.24",
+	"name": "homebridge-plugin-ewelink-cube",
+	"displayName": "eWeLink CUBE",
+	"version": "1.0.26",
 	"description": "",
 	"main": "lib/index.js",
 	"scripts": {
@@ -22,10 +22,8 @@
 		"@types/eventsource": "^1.1.10",
 		"@types/lodash": "^4.14.191",
 		"@types/multicast-dns": "^7.2.1",
-		"@types/ws": "^8.5.3",
 		"homebridge": "^1.6.0",
-		"rimraf": "^3.0.2",
-		"ws": "^8.11.0"
+		"rimraf": "^3.0.2"
 	},
 	"dependencies": {
 		"@homebridge/plugin-ui-utils": "^0.0.19",
