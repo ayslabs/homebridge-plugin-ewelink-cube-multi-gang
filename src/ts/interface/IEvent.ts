@@ -1,14 +1,14 @@
 import { IDevice } from "./IDevice";
 
 /**
- * 新增设备事件
+ * add device
  */
 export interface IResponseDeviceObject {
 	payload: IDevice
 }
 
 /**
- * 设备状态更新事件
+ * update device state
  */
 export interface IUpdateDeviceState {
 	endpoint: IEndpointObject,
@@ -16,7 +16,7 @@ export interface IUpdateDeviceState {
 }
 
 /**
- * 设备信息更新事件
+ * update device info
  */
 export interface IUpdateDeviceInfo {
 	endpoint: IEndpointObject,
@@ -26,14 +26,14 @@ export interface IUpdateDeviceInfo {
 }
 
 /**
- * 设备删除事件
+ * delete device
  */
 export interface IDeleteDevice {
 	endpoint: IEndpointObject
 }
 
 /**
- * 设备离线事件
+ * device offline
  */
 
 export interface IUpdateDeviceOnline {

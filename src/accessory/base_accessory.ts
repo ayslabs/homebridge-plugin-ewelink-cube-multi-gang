@@ -29,7 +29,7 @@ export class base_accessory implements IBaseAccessory {
 			const uuid = platform.api.hap.uuid.generate(device.serial_number);
 			this.accessory = new platform.api.platformAccessory(device.name, uuid, category);
 		} else {
-			this.platform.logManager(LogLevel.INFO, 'Existing Accessory', this.accessory.UUID, this.accessory.displayName)
+			// this.platform.logManager(LogLevel.INFO, 'Existing Accessory', this.accessory.UUID, this.accessory.displayName)
 		}
 		//	set fundamental device info
 		this.accessory.getService(this.platform.Service.AccessoryInformation)
@@ -40,7 +40,6 @@ export class base_accessory implements IBaseAccessory {
 			.setCharacteristic(this.platform.Characteristic.FirmwareRevision, device.firmware_version);
 	}
 
-	//	各子类单独实现功能
 	mountService() { }
 	updateValue(params?: any) { }
 	getDeviceStateByCap(capability: ECapability, device: IDevice, index?: number) {
@@ -51,7 +50,7 @@ export class base_accessory implements IBaseAccessory {
 		return deviceUtils.getDeviceStateByCap(capability, device, index)
 	}
 
-	//	更改设备状态请求
+	//	update device state request
 	async sendToDevice(params: any) {
 		try {
 			const httpConfig: IHttpConfig = {

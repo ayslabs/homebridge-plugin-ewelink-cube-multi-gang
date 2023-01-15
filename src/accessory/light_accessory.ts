@@ -1,6 +1,6 @@
 import { base_accessory } from './base_accessory';
 import { HomebridgePlatform } from '../HomebridgePlatform';
-import { PlatformAccessory, Categories, CharacteristicValue, Service } from 'homebridge';
+import { PlatformAccessory, Categories, CharacteristicValue, Service, LogLevel } from 'homebridge';
 import { IDevice } from '../ts/interface/IDevice';
 import { ECapability } from '../ts/enum/ECapability';
 import deviceUtils from '../utils/deviceUtils';
@@ -40,28 +40,17 @@ export class light_accessory extends base_accessory {
 				})
 				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.BRIGHTNESS, { value })
-					this.state.receiveSse = false
-					if (this.receiveTimeout) {
-						clearTimeout(this.receiveTimeout)
-					}
-					this.receiveTimeout = setTimeout(() => {
-						this.state.receiveSse = true
-					}, 3000)
-					await this.debounceControBrightness(params)
+					await this.debounceControlLight(params)
 				});
 		}
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_TEMPERATURE)) {
 			this.service?.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-				.setProps({
-					minValue: 0,
-					maxValue: 100
-				})
 				.onGet(() => {
 					return this.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device)
 				})
-				.onSet((value: CharacteristicValue) => {
+				.onSet(async (value: CharacteristicValue) => {
 					const params = deviceUtils.getDeviceSendState(ECapability.COLOR_TEMPERATURE, { value })
-					this.sendToDevice(params)
+					await this.debounceControlLight(params)
 				});
 		}
 
@@ -98,7 +87,17 @@ export class light_accessory extends base_accessory {
 			}, 200)
 		}
 	}
-	debounceControBrightness = _.debounce(async (params) => await this.sendToDevice(params), 100)
+	debounceControlLight = _.debounce(async (params) => {
+		this.state.receiveSse = false
+		if (this.receiveTimeout) {
+			clearTimeout(this.receiveTimeout)
+		}
+		this.receiveTimeout = setTimeout(() => {
+			this.state.receiveSse = true
+		}, 3000)
+		await this.sendToDevice(params)
+	}, 100)
+
 	updateValue(): void {
 		if (!this.state.receiveSse) return;
 		const stateArr = Object.keys(this.device.state);

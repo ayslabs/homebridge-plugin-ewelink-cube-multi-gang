@@ -16,16 +16,16 @@ import ihostConfig from "./config/IhostConfig";
 import deviceUtils from "./utils/deviceUtils";
 
 const categoryAccessoryMap = new Map<string[], any>([
-    [[ECategory.SWITCH], DeviceType.switch_accessory],
-    [[ECategory.PLUG], DeviceType.outlet_accessory],
-    [[ECategory.LIGHT], DeviceType.light_accessory],
-    [[ECategory.SMOKE_DETECTOR], DeviceType.smoke_accessory],
-    [[ECategory.WATER_LEAK_DETECTOR], DeviceType.water_detector_accessory],
-    [[ECategory.MOTION_SENSOR], DeviceType.motion_accessory],
-    [[ECategory.CONTACT_SENSOR], DeviceType.door_accessory],
-    [[ECategory.CURTAIN], DeviceType.curtain_accessory],
-    [[ECategory.TEMPERATURE_HUMIDITY_SENSOR, ECategory.TEMPERATURE_SENSOR, ECategory.HUMIDITY_SENSOR], DeviceType.thermostat_accessory],
-    [[ECategory.BUTTON], DeviceType.button_accessory]
+	[[ECategory.SWITCH], DeviceType.switch_accessory],
+	[[ECategory.PLUG], DeviceType.outlet_accessory],
+	[[ECategory.LIGHT], DeviceType.light_accessory],
+	[[ECategory.SMOKE_DETECTOR], DeviceType.smoke_accessory],
+	[[ECategory.WATER_LEAK_DETECTOR], DeviceType.water_detector_accessory],
+	[[ECategory.MOTION_SENSOR], DeviceType.motion_accessory],
+	[[ECategory.CONTACT_SENSOR], DeviceType.door_accessory],
+	[[ECategory.CURTAIN], DeviceType.curtain_accessory],
+	[[ECategory.TEMPERATURE_HUMIDITY_SENSOR, ECategory.TEMPERATURE_SENSOR, ECategory.HUMIDITY_SENSOR], DeviceType.thermostat_accessory],
+	[[ECategory.BUTTON], DeviceType.button_accessory]
 ]);
 
 export class HomebridgePlatform implements DynamicPlatformPlugin {
@@ -43,18 +43,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	public event: EventSource | null = null
 
 	constructor(public readonly log: Logger, public readonly config: IPlatFormConfig, public readonly api: API) {
-		// this.logManager(LogLevel.INFO, '----Finished initializing ihost platform config-----', this.config)
 		this.api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
 			//	init ihost config
 			ihostConfig.handleConfig(config);
-			this.logManager(LogLevel.INFO, '----Executed didFinishLaunching callback----')
+			this.log.info('----Executed didFinishLaunching callback----')
 
 			const { ihost = {} } = this.config
 			const { ip = '', at = '', devices = [] } = ihost
 
 			//	1. confirm avaliable ip at
 			if (!ip || !at) {
-				this.logManager(LogLevel.WARN, '----No avaliable ihost! Please check the config.json----')
+				this.log.warn('----No avaliable ihost! Please check the config.json----')
 				return;
 			}
 
@@ -66,17 +65,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 					ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
 				}
 				const openDeviceResp = await this.getIhostDevices(httpConfig);
-				this.logManager(LogLevel.INFO, '----Get openapi devices----', openDeviceResp)
+				// this.logManager(LogLevel.INFO, '----Get openapi devices----', openDeviceResp)
 				if (openDeviceResp.error !== 0) {
 					this.handleHttpError(openDeviceResp.error)
 					return;
 				}
 				//	3. handle ihost devices and other config
 				const filterDevices = this.handleDevice(openDeviceResp.data.device_list, devices)
-				this.logManager(LogLevel.INFO, '----handle devices----', filterDevices)
+				// this.logManager(LogLevel.INFO, '----handle devices----', filterDevices)
 
 				if (!filterDevices.length) {
-					this.logManager(LogLevel.WARN, '----No Avaliable Devices----', filterDevices)
+					this.log.warn('----No Avaliable Devices----')
 					return
 				}
 				//	4. transfer device 2 accessory
@@ -84,14 +83,14 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 					this.transferDevice(device)
 				}
 			} catch (error) {
-				this.logManager(LogLevel.WARN, '----Unexpected error----', error)
+				this.log.warn('----Unexpected error----', error)
 				return;
 			}
 
 		})
 		this.api.on(APIEvent.SHUTDOWN, () => {
 			//	close server
-			this.logManager(LogLevel.INFO, '----plugin shutdown----')
+			this.log.info('----plugin shutdown----')
 			try {
 				this.clearSSE()
 			} catch (error) {
@@ -113,7 +112,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 			}
 		}
 	}
-	//	处理 openapi设备 与 config.json配置文件中的设备 的对比，筛选出可以注册到hb的设备
+	//	handle openapi devices, compare with config.json devices, filter devices registry to hb
 	handleDevice(openDevices: IDevice[], devices: IDeviceConfig[]) {
 		if (!openDevices || !openDevices.length) {
 			return []
@@ -121,10 +120,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		const finalDevice: IDevice[] = []
 		openDevices.forEach(device => {
 			//	配置文件中不存在该设备，可以返回
+			//	config.json not exist
 			if (!JSON.stringify(devices).includes(device.serial_number)) {
 				finalDevice.push(device)
 			} else {
-				//	配置文件中存在该设备，则根据选中情况来判定
+				// config.json exist the device, depends on the checked status
 				const temp = devices.find(item => item.serial_number === device.serial_number);
 				if (!temp) finalDevice.push(device)
 				if (temp && temp.checked) finalDevice.push(device)
@@ -132,7 +132,6 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		})
 		//	get memory store accessories
 		const accessoriesUIID = [...this.accessories.keys()];
-		// this.logManager(LogLevel.INFO, '----accessoriesUIID----', accessoriesUIID)
 
 		// if openapi has not the device but memory has, delete the device
 		// get final devices serial_number array
@@ -159,13 +158,13 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		//	search cache accessory
 		const cacheAccessory = this.accessories.get(uuid);
 		let deviceAccessory: IBaseAccessory | undefined = undefined
-        for (let categoryArr of categoryAccessoryMap.keys()) {
-            if (categoryArr.includes(category)) {
-                const accessory = categoryAccessoryMap.get(categoryArr)
-                deviceAccessory = new accessory(this, cacheAccessory, device)
-                break
-            }
-        }
+		for (let categoryArr of categoryAccessoryMap.keys()) {
+			if (categoryArr.includes(category)) {
+				const accessory = categoryAccessoryMap.get(categoryArr)
+				deviceAccessory = new accessory(this, cacheAccessory, device)
+				break
+			}
+		}
 		if (deviceAccessory && typeof deviceAccessory.mountService === 'function') {
 			deviceAccessory.mountService()
 		}
@@ -178,18 +177,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 	}
 	//	registry accessory to platform plugin
 	registryAccesory(accessory: PlatformAccessory) {
-		this.logManager(LogLevel.INFO, `add accessory ${accessory.displayName} ${accessory.UUID}`)
+		this.log.info(`add accessory ${accessory.displayName} ${accessory.UUID}`)
 		this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 	}
 	//	add accessory
 	addAccessory(device: IDevice) {
 		deviceUtils.setDeviceName(device)
-		this.logManager(LogLevel.INFO, `add accessory ${device.name}`)
 		this.transferDevice(device)
 	}
 	//	delete accessory
 	deleteAccessory(accessory: PlatformAccessory) {
-		this.logManager(LogLevel.INFO, `delete accessory ${accessory.displayName}`)
+		this.log.info(`delete accessory ${accessory.displayName}`)
 		this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory])
 		this.accessories.delete(accessory.UUID);
 		this.formatAccessory.delete(accessory.UUID);
@@ -197,7 +195,6 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
 	initSSE() {
 		const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
-		// this.logManager(LogLevel.INFO, 'sse url', url)
 		try {
 			this.event = new EventSource(url);
 			this.event.onopen = (event) => {
@@ -207,17 +204,15 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 				this.logManager(LogLevel.ERROR, 'init sse error', event)
 			}
 			this.event.addEventListener('device#v1#addDevice', (event) => {
-				this.logManager(LogLevel.INFO, 'add device by sse', JSON.stringify(event))
 				const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
 				this.addAccessory(payload)
 			})
 			this.event.addEventListener('device#v1#updateDeviceState', (event) => {
-				this.logManager(LogLevel.INFO, 'update device state by sse', JSON.stringify(event))
+				this.logManager(LogLevel.INFO, 'receive sse message', event ? event.data : {})
 				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceState;
 				this.updateAccessory(serial_number, payload, true)
 			})
 			this.event.addEventListener('device#v1#updateDeviceOnline', (event) => {
-				this.logManager(LogLevel.INFO, 'update device online by sse', JSON.stringify(event))
 				const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceOnline;
 				this.updateAccessory(serial_number, payload)
 			})
@@ -249,7 +244,6 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 		const uuid = this.api.hap.uuid.generate(serial_number);
 		const accessory = this.formatAccessory.get(uuid)
 		if (accessory && typeof accessory.updateValue === 'function') {
-			// this.logManager(LogLevel.INFO, 'update ---- >', params)
 			try {
 				if (!params) {
 					accessory.updateValue()

@@ -1,9 +1,9 @@
 import { ECapability } from '../ts/enum/ECapability';
-import { IDevice, IDeviceState } from '../ts/interface/IDevice';
+import { IDevice } from '../ts/interface/IDevice';
 import _ from 'lodash';
 import colotConvertUtils from './colotConvertUtils';
 
-//	获取多通道设备的通道数据
+//	get multi channels devices config
 function getMultiDeviceChannel(device: IDevice) {
 	const { capabilities } = device;
 	if (!capabilities.length) return [];
@@ -30,7 +30,7 @@ function getMultiDeviceChannel(device: IDevice) {
 	return channelInfo;
 }
 
-//	根据设备能力判断是否挂载相应服务
+//	according to the device abilities to mount services 
 function renderServiceByCapability(device: IDevice, capability: ECapability) {
 	const { capabilities = [] } = device;
 	if (!capabilities.length) return false;
@@ -38,7 +38,7 @@ function renderServiceByCapability(device: IDevice, capability: ECapability) {
 }
 
 /**
- * 获取设备更新指令
+ * get update device code
  * power => powerState
  * toggle => toggleState
  * { toggle: { "1": { toggleState: "on" }, "2": { toggleState: "on" } } }
@@ -100,13 +100,14 @@ const deviceCapaStateMap = new Map<
 		[ECapability.COLOR_TEMPERATURE, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice, index: string }
-				return _.get(device, ['state', 'color-temperature', 'colorTemperature'], 50)
+				const value = _.get(device, ['state', 'color-temperature', 'colorTemperature'], 0)
+				return !value ? 500 : 500 - Math.round(value * 3.6)
 			},
 			getDeviceSend: (params) => {
-				const { value = 1 } = params;
+				const { value = 140 } = params;
 				return {
 					"color-temperature": {
-						"colorTemperature": value
+						"colorTemperature": Math.round((500 - value) / 3.6)
 					}
 				}
 			},

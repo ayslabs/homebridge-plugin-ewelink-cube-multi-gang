@@ -13,19 +13,17 @@ class PluginUiServer extends HomebridgePluginUiServer {
 	constructor() {
 		super();
 		this.mdns = makeMdns()
-		//	开启mdns查询
+		//	start mdns query
 		this.onRequest('/queryMdns', async () => {
 			this.queryDevices();
 			this.pushMdnsDevices();
 		})
-		//	根据ip查询
+		//	according to the ip
 		this.onRequest('/getDeviceByIp', async (ip: string) => {
 			return await this.getDeviceByIp(ip)
 		})
-		//	获取 access_token
+		//	get access_token
 		this.onRequest('/getAccessToken', async (ip) => {
-			// const res = await axios.get('http://localhost:1880/open-api/v1/rest/bridge/access_token')
-			// const res = await axios.get(`http://${ip}/open-api/v1/rest/bridge/access_token`)
 			if (!ip) {
 				return {
 					msg: 'invalid params'
@@ -45,7 +43,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
 				}
 			}
 		})
-		//	获取 openapi 的设备
+		//	get openapi devices
 		this.onRequest('/getDevices', async (config) => {
 			const { ip = '', at = '' } = config;
 			if (!ip || !at) {
@@ -76,10 +74,10 @@ class PluginUiServer extends HomebridgePluginUiServer {
 		this.ready();
 	}
 	//	主动推送mdns查询到的设备给到前端
+	//	push the mdns devices to the front
 	pushMdnsDevices() {
 		this.mdns?.on('response', async (response) => {
 			const { answers } = response as { answers: IMdnsResp[] };
-			// this.pushEvent('getMdnsDevices', answers)
 			if (!JSON.stringify(answers).includes('ihost')) return;
 			for (let answer of answers) {
 				if (answer.name.includes('ihost')) {
