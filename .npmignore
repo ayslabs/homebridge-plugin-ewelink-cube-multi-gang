@@ -135,5 +135,5 @@ web_modules/
 src
 src/*
 
-simulationDevice/
-test/
+src/simulationDevice/
+src/test/

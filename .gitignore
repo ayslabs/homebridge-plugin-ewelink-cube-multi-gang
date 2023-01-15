@@ -121,5 +121,5 @@ dist
 .pnp.*
 
 .DS_Store
-test
-simulationDevice
+src/test/
+src/simulationDevice/
