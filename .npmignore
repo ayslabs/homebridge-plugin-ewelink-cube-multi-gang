@@ -134,3 +134,6 @@ web_modules/
 .pnp.*
 src
 src/*
+
+simulationDevice/
+test/

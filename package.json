@@ -1,12 +1,16 @@
 {
 	"name": "homebridge-plugin-ewelink-cube",
 	"displayName": "eWeLink CUBE",
-	"version": "1.0.26",
-	"description": "",
+	"version": "0.0.2-beta",
+	"description": "homebridge-plugin",
 	"main": "lib/index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "rimraf ./lib && tsc && cd lib/homebridge-ui && mkdir public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/CoolKit-Technologies/cc.coolkit.it.ihost.homebridge.plugin.server.git"
 	},
 	"engines": {
 		"node": ">=14.18.1",
