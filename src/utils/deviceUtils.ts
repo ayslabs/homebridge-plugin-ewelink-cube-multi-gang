@@ -133,13 +133,14 @@ const deviceCapaStateMap = new Map<
 		[ECapability.PERCENTAGE, {
 			getter: (params) => {
 				const { device } = params as { device: IDevice }
-				return _.get(device, ['state', 'percentage', 'percentage'], 1)
+				const percentage = _.get(device, ['state', 'percentage', 'percentage'], 0)
+				return Math.abs(100 - percentage)
 			},
 			getDeviceSend(params) {
 				const { value = 1 } = params
 				return {
 					"percentage": {
-						"percentage": value
+						"percentage": Math.abs(100 - value)
 					}
 				}
 			},

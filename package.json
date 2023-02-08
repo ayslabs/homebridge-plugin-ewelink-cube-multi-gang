@@ -1,11 +1,10 @@
 {
 	"name": "homebridge-plugin-ewelink-cube",
 	"displayName": "eWeLink CUBE",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "homebridge-plugin",
 	"main": "lib/index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "rimraf ./lib && tsc && cd lib/homebridge-ui && mkdir public"
 	},
 	"repository": {
