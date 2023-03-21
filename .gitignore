@@ -123,3 +123,7 @@ dist
 .DS_Store
 src/test/
 src/simulationDevice/
+
+# vscode plugin folder
+.vscode
+.history

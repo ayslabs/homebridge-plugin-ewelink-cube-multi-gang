@@ -8,123 +8,131 @@ import { EHttpPath } from '../ts/enum/EHttpPath';
 
 class PluginUiServer extends HomebridgePluginUiServer {
 
-	public mdnsDevices: Map<string, { ip: string, name: string, mac: string }> = new Map()
-	public mdns: MulticastDNS | undefined = undefined
-	constructor() {
-		super();
-		this.mdns = makeMdns()
-		//	start mdns query
-		this.onRequest('/queryMdns', async () => {
-			this.queryDevices();
-			this.pushMdnsDevices();
-		})
-		//	according to the ip
-		this.onRequest('/getDeviceByIp', async (ip: string) => {
-			return await this.getDeviceByIp(ip)
-		})
-		//	get access_token
-		this.onRequest('/getAccessToken', async (ip) => {
-			if (!ip) {
-				return {
-					msg: 'invalid params'
-				}
-			}
-			const httpConfig: IHttpConfig = {
-				path: EHttpPath.ACCESS_TOKEN,
-				ip,
-				method: EMethod.GET
-			}
-			try {
-				const resp = await httpRequest(httpConfig);
-				return resp
-			} catch (error) {
-				return {
-					error: 1000
-				}
-			}
-		})
-		//	get openapi devices
-		this.onRequest('/getDevices', async (config) => {
-			const { ip = '', at = '' } = config;
-			if (!ip || !at) {
-				return {
-					msg: 'invalid params'
-				}
-			}
-			const httpConfig: IHttpConfig = {
-				path: EHttpPath.DEVICES,
-				ip,
-				method: EMethod.GET,
-				at
-			}
-			try {
-				const resp = await httpRequest(httpConfig);
-				return resp
-			} catch (error) {
-				return {
-					error: 1000,
-					data: []
-				}
-			}
-		})
-		//	Destroy the mdns instance. Closes the udp socket.
-		this.onRequest('/closeQuery', async () => {
-			this.mdns?.destroy()
-		})
-		this.ready();
-	}
-	//	主动推送mdns查询到的设备给到前端
-	//	push the mdns devices to the front
-	pushMdnsDevices() {
-		this.mdns?.on('response', async (response) => {
-			const { answers } = response as { answers: IMdnsResp[] };
-			if (!JSON.stringify(answers).includes('ihost')) return;
-			for (let answer of answers) {
-				if (answer.name.includes('ihost')) {
-					const ip = answer.data
-					const response = await this.getDeviceByIp(ip);
-					if (response.error === 0 && response.data) {
-						const { mac } = response.data as { mac: string, ip: string }
-						!this.mdnsDevices.get(mac) && this.mdnsDevices.set(mac, { ip, mac, name: answer.name })
-					}
-				}
-			}
-			if (this.mdnsDevices.size > 0) {
-				this.pushEvent('getMdnsDevices', [...this.mdnsDevices.values()])
-			}
-		})
-	}
-	queryDevices() {
-		this.mdns?.query({
-			questions: [
-				{
-					name: 'ihost.local',
-					type: 'A',
-				},
-			],
-		})
-	}
-	async getDeviceByIp(ip: string) {
-		if (!ip) {
-			return {
-				msg: 'invalid params'
-			}
-		}
-		const httpConfig: IHttpConfig = {
-			path: EHttpPath.IHOST_INFO,
-			ip,
-			method: EMethod.GET,
-		}
-		try {
-			const resp = await httpRequest(httpConfig);
-			return resp
-		} catch (error) {
-			return {
-				error: 1000,
-				data: []
-			}
-		}
-	}
+    public mdnsDevices: Map<string, { ip: string, name: string, mac: string }> = new Map()
+    public mdns: MulticastDNS | undefined = undefined
+    constructor() {
+        super();
+        this.mdns = makeMdns()
+        //	start mdns query
+        this.onRequest('/queryMdns', async () => {
+            this.queryDevices();
+            this.pushMdnsDevices();
+        })
+        //	according to the ip
+        this.onRequest('/getDeviceByIp', async (ip: string) => {
+            return await this.getDeviceByIp(ip)
+        })
+        //	get access_token
+        this.onRequest('/getAccessToken', async (ip) => {
+            if (!ip) {
+                return {
+                    msg: 'invalid params'
+                }
+            }
+            const httpConfig: IHttpConfig = {
+                path: EHttpPath.ACCESS_TOKEN,
+                ip,
+                method: EMethod.GET
+            }
+            try {
+                const resp = await httpRequest(httpConfig);
+                console.log("get token res =>", resp);
+                return resp
+            } catch (error) {
+                return {
+                    error: 1000
+                }
+            }
+        })
+        //	get openapi devices
+        this.onRequest('/getDevices', async (config) => {
+            const { ip = '', at = '' } = config;
+            if (!ip || !at) {
+                return {
+                    msg: 'invalid params'
+                }
+            }
+            const httpConfig: IHttpConfig = {
+                path: EHttpPath.DEVICES,
+                ip,
+                method: EMethod.GET,
+                at
+            }
+            try {
+                const resp = await httpRequest(httpConfig);
+                return resp
+            } catch (error) {
+                return {
+                    error: 1000,
+                    data: []
+                }
+            }
+        })
+        //	Destroy the mdns instance. Closes the udp socket.
+        this.onRequest('/closeQuery', async () => {
+            this.mdns?.destroy()
+        })
+        this.ready();
+    }
+    //	push the mdns devices to the front
+    pushMdnsDevices() {
+        this.mdns?.on('response', async (response) => {
+            const { answers } = response as { answers: IMdnsResp[] };
+            // console.log("answers => ", answers)
+            if (!JSON.stringify(answers).includes('ihost') && !JSON.stringify(answers).includes('NSPanelPro')) return;
+            for (let answer of answers) {
+                const isHost = answer.name.includes('ihost');
+                const isNsPanelPro = answer.name.includes('NSPanelPro');
+                if (isHost || isNsPanelPro) {
+                    const ip = isNsPanelPro ? `${answer.data}:8081` : answer.data;
+                    const response = await this.getDeviceByIp(ip);
+                    if (response.error === 0 && response.data) {
+                        const { mac } = response.data as { mac: string, ip: string }
+                        !this.mdnsDevices.get(mac) && this.mdnsDevices.set(mac, { ip, mac, name: answer.name })
+                    }
+                }
+            }
+            if (this.mdnsDevices.size > 0) {
+                this.pushEvent('getMdnsDevices', [...this.mdnsDevices.values()])
+            }
+        })
+    }
+    queryDevices() {
+        this.mdns?.query({
+            questions: [
+                {
+                    name: 'ihost.local',
+                    type: 'A',
+                },
+                {
+                    name: 'nspanelpro.local',
+                    type: 'A',
+                },
+            ],
+        })
+    }
+    async getDeviceByIp(ip: string) {
+        if (!ip) {
+            return {
+                msg: 'invalid params'
+            }
+        }
+        const httpConfig: IHttpConfig = {
+            path: EHttpPath.IHOST_INFO,
+            ip,
+            method: EMethod.GET,
+        }
+        try {
+            const resp = await httpRequest(httpConfig);
+            return resp
+        } catch (error) {
+            console.log("api error => ", error);
+            return {
+                error: 1000,
+                data: []
+            }
+        }
+    }
 }
 
 (() => new PluginUiServer())();
