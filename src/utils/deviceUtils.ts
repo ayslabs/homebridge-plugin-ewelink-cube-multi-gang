@@ -204,7 +204,7 @@ function getDeviceSendState(capability: ECapability, params: any) {
 /**
  * default device name
  */
-export function setDeviceName(device: IDevice) {
+function setDeviceName(device: IDevice) {
 	!device.name && (device.name = device.manufacturer + ' ' + device.display_category)
 }
 export default { getMultiDeviceChannel, renderServiceByCapability, getDeviceStateByCap, getDeviceSendState, setDeviceName };

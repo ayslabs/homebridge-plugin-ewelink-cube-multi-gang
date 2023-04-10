@@ -48,8 +48,11 @@ export class switch_accessory extends base_accessory {
                     return this.getDeviceStateByCap(ECapability.POWER, this.device)
                 })
                 .onSet(async (value: CharacteristicValue) => {
+                    console.log("switch on set", this.device.name, value);
                     const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
+                    console.log("switch on set params", this.device.name, params);
                     await this.sendToDevice(params)
+                    console.log("switch update finish", this.device.name);
                 })
         }
     }

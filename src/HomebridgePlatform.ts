@@ -14,6 +14,7 @@ import { EMethod } from "./ts/enum/EMethod";
 import httpRequest from "./service/httpRequest";
 import ihostConfig from "./config/IhostConfig";
 import deviceUtils from "./utils/deviceUtils";
+import { base_accessory } from "./accessory/base_accessory";
 
 const categoryAccessoryMap = new Map<string[], any>([
     [[ECategory.SWITCH], DeviceType.switch_accessory],
@@ -66,13 +67,14 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 }
                 const openDeviceResp = await this.getIhostDevices(httpConfig);
                 // this.logManager(LogLevel.INFO, '----Get open api devices----', openDeviceResp)
+                console.log('----Get open api devices----', openDeviceResp)
                 if (openDeviceResp.error !== 0) {
                     this.handleHttpError(openDeviceResp.error)
                     return;
                 }
                 //	3. handle ihost devices and other config
                 const filterDevices = this.handleDevice(openDeviceResp.data.device_list, devices)
-                // this.logManager(LogLevel.INFO, '----handle devices----', filterDevices)
+                this.logManager(LogLevel.INFO, '----handle devices----', filterDevices)
 
                 if (!filterDevices.length) {
                     this.log.warn('----No Avaliable Devices----')
@@ -94,7 +96,8 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
             try {
                 this.clearSSE()
             } catch (error) {
-
+                this.log.warn('----plugin shutdown error----', error)
+                return;
             }
         })
     }
@@ -193,15 +196,22 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
         this.formatAccessory.delete(accessory.UUID);
     }
 
-    initSSE() {
+    public initSSE() {
         const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
         try {
             this.event = new EventSource(url);
             this.event.onopen = (event) => {
                 this.logManager(LogLevel.INFO, 'init sse success', event)
             }
-            this.event.onerror = (event) => {
+            this.event.onerror = async (event) => {
+                console.log("this.event?.url => ", this.event?.url)
                 this.logManager(LogLevel.ERROR, 'init sse error', event)
+                const res = await base_accessory.prototype.retryForDomain();
+                if (res!.error === 0) {
+                    this.clearSSE();
+                    // reconnect sse
+                    this.initSSE();
+                }
             }
             this.event.addEventListener('device#v1#addDevice', (event) => {
                 const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
@@ -247,7 +257,9 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
         const uuid = this.api.hap.uuid.generate(serial_number);
         console.log("updateAccessory uuid => ", uuid);
         const accessory = this.formatAccessory.get(uuid)
-        // console.log("updateAccessory accessory => ", accessory);
+        if (!accessory || typeof accessory.updateValue !== 'function') {
+            console.log("updateAccessory accessory => ", accessory);
+        }
         if (accessory && typeof accessory.updateValue === 'function') {
             try {
                 if (!params) {
@@ -267,8 +279,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                     }
                     Object.assign(accessory.device.state['toggle'], toggleItem)
                 }
-                console.log("update Value sse", sse);
+                console.log("update Value sse1111", sse)
+                new accessory.platform.api.hap.HapStatusError(accessory.platform.api.hap.HAPStatus.SUCCESS);
+                console.log("update Value success")
                 accessory.updateValue(sse)
+                console.log("update Value finish")
             } catch (error) {
                 console.log("updateAccessory error => ", error);
             }

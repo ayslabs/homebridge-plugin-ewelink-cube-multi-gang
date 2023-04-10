@@ -36,7 +36,6 @@ class PluginUiServer extends HomebridgePluginUiServer {
             }
             try {
                 const resp = await httpRequest(httpConfig);
-                console.log("get token res =>", resp);
                 return resp
             } catch (error) {
                 return {
@@ -44,7 +43,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
                 }
             }
         })
-        //	get openapi devices
+        //	get open api devices
         this.onRequest('/getDevices', async (config) => {
             const { ip = '', at = '' } = config;
             if (!ip || !at) {
@@ -62,6 +61,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
                 const resp = await httpRequest(httpConfig);
                 return resp
             } catch (error) {
+                console.log("get Device error => ", error);
                 return {
                     error: 1000,
                     data: []
