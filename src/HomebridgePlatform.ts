@@ -60,10 +60,11 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
             try {
                 //	init sse server
-                this.initSSE()
+                const initRes = await this.initSSE()
+                if (!initRes) return;
                 //	2. get ihost open api devices
                 const httpConfig: IHttpConfig = {
-                    ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
+                    ip: ihostConfig.ip, at, path: EHttpPath.DEVICES, method: EMethod.GET
                 }
                 const openDeviceResp = await this.getIhostDevices(httpConfig);
                 // this.logManager(LogLevel.INFO, '----Get open api devices----', openDeviceResp)
@@ -196,47 +197,52 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
         this.formatAccessory.delete(accessory.UUID);
     }
 
-    public initSSE() {
-        const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
-        try {
-            this.event = new EventSource(url);
-            this.event.onopen = (event) => {
-                this.logManager(LogLevel.INFO, 'init sse success', event)
-            }
-            this.event.onerror = async (event) => {
-                console.log("this.event?.url => ", this.event?.url)
-                this.logManager(LogLevel.ERROR, 'init sse error', event)
-                const res = await base_accessory.prototype.retryForDomain();
-                if (res!.error === 0) {
-                    this.clearSSE();
-                    // reconnect sse
-                    this.initSSE();
+    public async initSSE() {
+        return new Promise(resolve => {
+            const url = `http://${ihostConfig.ip}${EHttpPath.SSE}?access_token=${ihostConfig.at}`
+            try {
+                this.event = new EventSource(url);
+                this.event.onopen = (event) => {
+                    this.logManager(LogLevel.INFO, 'init sse success', event);
+                    resolve(true);
                 }
-            }
-            this.event.addEventListener('device#v1#addDevice', (event) => {
-                const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
-                this.addAccessory(payload)
-            })
-            this.event.addEventListener('device#v1#updateDeviceState', (event) => {
-                this.logManager(LogLevel.INFO, 'receive sse message', event ? event.data : {})
-                const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceState;
-                this.updateAccessory(serial_number, payload, true)
-            })
-            this.event.addEventListener('device#v1#updateDeviceOnline', (event) => {
-                const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceOnline;
-                this.updateAccessory(serial_number, payload)
-            })
-            this.event.addEventListener('device#v1#deleteDevice', (event) => {
-                const { endpoint: { serial_number } } = JSON.parse(event.data) as IDeleteDevice;
-                const uuid = this.api.hap.uuid.generate(serial_number);
-                const accessory = this.accessories.get(uuid);
-                if (accessory) {
-                    this.deleteAccessory(accessory)
+                this.event.onerror = async (event) => {
+                    console.log("this.event?.url => ", this.event?.url)
+                    this.logManager(LogLevel.ERROR, 'init sse error', event)
+                    const res = await base_accessory.prototype.retryForDomain();
+                    if (res!.error === 0) {
+                        this.clearSSE();
+                        // reconnect sse
+                        await this.initSSE();
+                    }
+                    resolve(true);
                 }
-            })
-        } catch (error) {
-            this.logManager(LogLevel.ERROR, 'catch init sse error', error)
-        }
+                this.event.addEventListener('device#v1#addDevice', (event) => {
+                    const { payload } = JSON.parse(event.data) as IResponseDeviceObject;
+                    this.addAccessory(payload)
+                })
+                this.event.addEventListener('device#v1#updateDeviceState', (event) => {
+                    this.logManager(LogLevel.INFO, 'receive sse message', event ? event.data : {})
+                    const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceState;
+                    this.updateAccessory(serial_number, payload, true)
+                })
+                this.event.addEventListener('device#v1#updateDeviceOnline', (event) => {
+                    const { endpoint: { serial_number }, payload } = JSON.parse(event.data) as IUpdateDeviceOnline;
+                    this.updateAccessory(serial_number, payload)
+                })
+                this.event.addEventListener('device#v1#deleteDevice', (event) => {
+                    const { endpoint: { serial_number } } = JSON.parse(event.data) as IDeleteDevice;
+                    const uuid = this.api.hap.uuid.generate(serial_number);
+                    const accessory = this.accessories.get(uuid);
+                    if (accessory) {
+                        this.deleteAccessory(accessory)
+                    }
+                })
+            } catch (error) {
+                this.logManager(LogLevel.ERROR, 'catch init sse error', error);
+                resolve(false)
+            }
+        })
     }
     clearSSE() {
         try {

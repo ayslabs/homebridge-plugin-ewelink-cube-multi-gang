@@ -78,7 +78,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
     pushMdnsDevices() {
         this.mdns?.on('response', async (response) => {
             const { answers } = response as { answers: IMdnsResp[] };
-            // console.log("answers => ", answers)
+            console.log("answers => ", answers)
             if (!JSON.stringify(answers).includes('ihost') && !JSON.stringify(answers).includes('NSPanelPro')) return;
             for (let answer of answers) {
                 const isHost = answer.name.includes('ihost');
@@ -106,6 +106,14 @@ class PluginUiServer extends HomebridgePluginUiServer {
                 },
                 {
                     name: 'nspanelpro.local',
+                    type: 'A',
+                },
+                {
+                    name: 'ihost-2.local',
+                    type: 'A',
+                },
+                {
+                    name: 'ihost-3.local',
                     type: 'A',
                 },
             ],
