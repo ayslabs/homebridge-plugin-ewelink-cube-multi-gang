@@ -68,7 +68,6 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 }
                 const openDeviceResp = await this.getIhostDevices(httpConfig);
                 // this.logManager(LogLevel.INFO, '----Get open api devices----', openDeviceResp)
-                console.log('----Get open api devices----', openDeviceResp)
                 if (openDeviceResp.error !== 0) {
                     this.handleHttpError(openDeviceResp.error)
                     return;
@@ -207,7 +206,6 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                     resolve(true);
                 }
                 this.event.onerror = async (event) => {
-                    console.log("this.event?.url => ", this.event?.url)
                     this.logManager(LogLevel.ERROR, 'init sse error', event)
                     const res = await base_accessory.prototype.retryForDomain();
                     if (res!.error === 0) {
@@ -257,15 +255,8 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
     }
 
     updateAccessory(serial_number: string, params?: any, sse = false) {
-        console.log("updateAccessory serial_number => ", serial_number);
-        console.log("updateAccessory params => ", params);
-        console.log("updateAccessory sse => ", sse);
         const uuid = this.api.hap.uuid.generate(serial_number);
-        console.log("updateAccessory uuid => ", uuid);
         const accessory = this.formatAccessory.get(uuid)
-        if (!accessory || typeof accessory.updateValue !== 'function') {
-            console.log("updateAccessory accessory => ", accessory);
-        }
         if (accessory && typeof accessory.updateValue === 'function') {
             try {
                 if (!params) {
@@ -285,13 +276,10 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                     }
                     Object.assign(accessory.device.state['toggle'], toggleItem)
                 }
-                console.log("update Value sse1111", sse)
                 new accessory.platform.api.hap.HapStatusError(accessory.platform.api.hap.HAPStatus.SUCCESS);
-                console.log("update Value success")
                 accessory.updateValue(sse)
-                console.log("update Value finish")
             } catch (error) {
-                console.log("updateAccessory error => ", error);
+                console.log("updateAccessory error", error);
             }
         }
     }

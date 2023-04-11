@@ -49,11 +49,8 @@ export class outlet_accessory extends base_accessory {
                     return this.getDeviceStateByCap(ECapability.POWER, this.device)
                 })
                 .onSet(async (value: CharacteristicValue) => {
-                    console.log("outlet switch on set => ", this.device.name, value);
                     const params = deviceUtils.getDeviceSendState(ECapability.POWER, { value })
-                    console.log("outlet switch on set params => ", this.device.name, params);
                     await this.sendToDevice(params)
-                    console.log("outlet switch update finish", this.device.name);
                 })
         }
     }

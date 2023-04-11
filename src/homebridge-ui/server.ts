@@ -61,7 +61,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
                 const resp = await httpRequest(httpConfig);
                 return resp
             } catch (error) {
-                console.log("get Device error => ", error);
+                console.log("get Device error");
                 return {
                     error: 1000,
                     data: []
@@ -78,7 +78,6 @@ class PluginUiServer extends HomebridgePluginUiServer {
     pushMdnsDevices() {
         this.mdns?.on('response', async (response) => {
             const { answers } = response as { answers: IMdnsResp[] };
-            console.log("answers => ", answers)
             if (!JSON.stringify(answers).includes('ihost') && !JSON.stringify(answers).includes('NSPanelPro')) return;
             for (let answer of answers) {
                 const isHost = answer.name.includes('ihost');
@@ -134,7 +133,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
             const resp = await httpRequest(httpConfig);
             return resp
         } catch (error) {
-            console.log("api error => ", error);
+            console.log("api error");
             return {
                 error: 1000,
                 data: []

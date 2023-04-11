@@ -82,32 +82,27 @@ export class base_accessory implements IBaseAccessory {
 
     async retryForDomain() {
         const { name } = ihostConfig;
-        console.log("retrying => ihostConfig", ihostConfig);
         const isIHost = name.includes('ihost');
         const domain = isIHost ? 'ihost' : 'nspanelpro.local:8081';
-        console.log("retrying => domain", domain);
         const httpConfig: IHttpConfig = {
             path: EHttpPath.IHOST_INFO,
             ip: domain,
             method: EMethod.GET,
         }
-        console.log("retrying => httpConfig", httpConfig);
 
         try {
             const resp = await httpRequest(httpConfig);
-            console.log("retrying => resp", resp);
             if (resp.error !== 0) {
                 return resp;
             }
             if (resp.data.mac === ihostConfig.mac) {
                 ihostConfig.ip = isIHost ? resp.data.ip : `${resp.data.ip}:8081`;
-                console.log("retrying => same mac, after change ihostConfig", ihostConfig)
                 return {
                     error: 0
                 }
             }
         } catch (error) {
-            console.log("api error => ", error);
+            console.log("api error");
             return {
                 error: 1000,
                 data: []
