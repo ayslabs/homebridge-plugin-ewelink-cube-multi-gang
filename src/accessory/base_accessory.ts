@@ -45,7 +45,7 @@ export class base_accessory implements IBaseAccessory {
     getDeviceStateByCap(capability: ECapability, device: IDevice, index?: number) {
         const { online = false } = device;
         if (!online) {
-            console.log("device off line", device.serial_number, device.name, online);
+            this.platform.logManager(LogLevel.INFO, "device off line", device.serial_number, device.name, online)
             throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE)
         }
         return deviceUtils.getDeviceStateByCap(capability, device, index)
@@ -102,7 +102,7 @@ export class base_accessory implements IBaseAccessory {
                 }
             }
         } catch (error) {
-            console.log("api error");
+            this.platform.logManager(LogLevel.INFO, "api error")
             return {
                 error: 1000,
                 data: []

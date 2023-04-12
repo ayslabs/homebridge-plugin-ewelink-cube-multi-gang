@@ -279,7 +279,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 new accessory.platform.api.hap.HapStatusError(accessory.platform.api.hap.HAPStatus.SUCCESS);
                 accessory.updateValue(sse)
             } catch (error) {
-                console.log("updateAccessory error", error);
+                this.logManager(LogLevel.INFO, "updateAccessory error", error);
             }
         }
     }

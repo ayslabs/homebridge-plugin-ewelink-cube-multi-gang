@@ -61,7 +61,6 @@ class PluginUiServer extends HomebridgePluginUiServer {
                 const resp = await httpRequest(httpConfig);
                 return resp
             } catch (error) {
-                console.log("get Device error");
                 return {
                     error: 1000,
                     data: []
@@ -133,7 +132,6 @@ class PluginUiServer extends HomebridgePluginUiServer {
             const resp = await httpRequest(httpConfig);
             return resp
         } catch (error) {
-            console.log("api error");
             return {
                 error: 1000,
                 data: []
