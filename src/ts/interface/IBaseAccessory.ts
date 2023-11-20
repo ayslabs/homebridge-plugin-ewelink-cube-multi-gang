@@ -4,10 +4,17 @@ import { IDevice } from './IDevice'
 
 
 export interface IBaseAccessory {
-	platform: HomebridgePlatform
-	accessory: PlatformAccessory | undefined
-	category: Categories
-	device: IDevice
-	mountService: () => void
-	updateValue: (params?: any) => void
+    platform: HomebridgePlatform;
+    accessory: PlatformAccessory | undefined;
+    category: Categories;
+    device: IDevice;
+    extra?: IBaseAccessoryExtra;
+    mountService: () => void;
+    updateValue: (params?: any) => void;
 }
+
+
+export interface IBaseAccessoryExtra {
+    /** rf bridge curtain channel */
+    rfCurtainChl?: string;
+};

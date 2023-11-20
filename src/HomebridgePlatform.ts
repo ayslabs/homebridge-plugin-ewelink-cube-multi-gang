@@ -1,5 +1,4 @@
 import { API, APIEvent, DynamicPlatformPlugin, Logger, LogLevel, PlatformAccessory, Service, Characteristic } from "homebridge";
-import DeviceType from './accessory/index';
 import { PLATFORM_NAME, PLUGIN_NAME } from "./config/platformConfig";
 import Devices from './simulationDevice/index'
 import { ECategory } from "./ts/enum/ECategory";
@@ -15,19 +14,11 @@ import httpRequest from "./service/httpRequest";
 import ihostConfig from "./config/IhostConfig";
 import deviceUtils from "./utils/deviceUtils";
 import { base_accessory } from "./accessory/base_accessory";
-
-const categoryAccessoryMap = new Map<string[], any>([
-    [[ECategory.SWITCH], DeviceType.switch_accessory],
-    [[ECategory.PLUG], DeviceType.outlet_accessory],
-    [[ECategory.LIGHT], DeviceType.light_accessory],
-    [[ECategory.SMOKE_DETECTOR], DeviceType.smoke_accessory],
-    [[ECategory.WATER_LEAK_DETECTOR], DeviceType.water_detector_accessory],
-    [[ECategory.MOTION_SENSOR], DeviceType.motion_accessory],
-    [[ECategory.CONTACT_SENSOR], DeviceType.door_accessory],
-    [[ECategory.CURTAIN], DeviceType.curtain_accessory],
-    [[ECategory.TEMPERATURE_HUMIDITY_SENSOR, ECategory.TEMPERATURE_SENSOR, ECategory.HUMIDITY_SENSOR], DeviceType.thermostat_accessory],
-    [[ECategory.BUTTON], DeviceType.button_accessory]
-]);
+import { get, isNull } from "lodash";
+import IRFBridgeInfo from "./ts/interface/IRFBridgeInfo";
+import { rf_button_accessory } from "./accessory/rf_button_accessory";
+import { rf_curtain_accessory } from "./accessory/rf_curtain_accessory";
+import { switch_accessory } from "./accessory/switch_accessory";
 
 export class HomebridgePlatform implements DynamicPlatformPlugin {
     public readonly Service: typeof Service = this.api.hap.Service;
@@ -74,7 +65,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 }
                 //	3. handle ihost devices and other config
                 const filterDevices = this.handleDevice(openDeviceResp.data.device_list, devices)
-                this.logManager(LogLevel.INFO, '----handle devices----', filterDevices)
+                this.logManager(LogLevel.INFO, '----handle devices----', JSON.stringify(filterDevices))
 
                 if (!filterDevices.length) {
                     this.log.warn('----No Avaliable Devices----')
@@ -144,7 +135,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
         accessoriesUIID.forEach(uuid => {
             if (!finalDeviceUUIDArray.includes(uuid)) {
                 const accessory = this.accessories.get(uuid);
-                accessory && this.deleteAccessory(accessory)
+                accessory && this.deleteOneAccessory(accessory)
             }
         })
         return finalDevice
@@ -155,23 +146,65 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
         this.accessories.set(accessory.UUID, accessory);
     }
     transferDevice(device: IDevice) {
-        deviceUtils.setDeviceName(device);
-        let category = device.display_category;
-        const uuid = this.api.hap.uuid.generate(device.serial_number);
-        //	search cache accessory
-        const cacheAccessory = this.accessories.get(uuid);
-        let deviceAccessory: IBaseAccessory | undefined = undefined
-        for (let categoryArr of categoryAccessoryMap.keys()) {
-            if (categoryArr.includes(category)) {
-                const accessory = categoryAccessoryMap.get(categoryArr)
-                deviceAccessory = new accessory(this, cacheAccessory, device)
-                break
+
+        // rf bridge need special care
+        if (deviceUtils.isRfBridge(device)) {
+            deviceUtils.setDeviceName(device);
+            const rfGatewayConfig = get(device, ['tags', '_smartHomeConfig', 'rfGatewayConfig'], null) as IRFBridgeInfo | null;
+            if (!rfGatewayConfig) return;
+
+            const { type, buttonInfoList } = rfGatewayConfig;
+
+            const MULTI_CHL_BTN = ['1', '2', '3', '4'];
+            const CURTAIN = '5';
+
+
+            if (MULTI_CHL_BTN.includes(type)) {
+                this.transferDeviceByAccessory(device, rf_button_accessory);
+                return;
+            }
+
+            // rf curtain need to be display as separate devices 
+            if (type === CURTAIN) {
+                try {
+                    for (const buttonInfo of buttonInfoList) {
+                        const uuid = this.api.hap.uuid.generate(`${device.serial_number}_curtain_${buttonInfo.rfChl}`);
+                        const cacheAccessory = this.accessories.get(uuid);
+                        const deviceAccessory: IBaseAccessory = new rf_curtain_accessory(this, cacheAccessory, device, buttonInfo.rfChl)
+                        if (typeof deviceAccessory.mountService === 'function') {
+                            deviceAccessory.mountService()
+                        }
+                        if (deviceAccessory.accessory) {
+                            this.accessories.set(uuid, deviceAccessory.accessory);
+                            this.formatAccessory.set(uuid, deviceAccessory);
+
+                            !cacheAccessory && this.registryAccessory(deviceAccessory.accessory);
+                        }
+                    }
+                } catch (error) {
+                    console.error("curtain init error", error);
+                }
+
+                return;
             }
         }
-        if (deviceAccessory && typeof deviceAccessory.mountService === 'function') {
+
+        // normal device
+        const accessory = deviceUtils.getAccessoryByCategory(device)
+        if (!accessory) return;
+        this.transferDeviceByAccessory(device, accessory);
+    }
+    transferDeviceByAccessory(device: IDevice, accessory: any) {
+        deviceUtils.setDeviceName(device);
+
+        const uuid = this.api.hap.uuid.generate(device.serial_number);
+        const cacheAccessory = this.accessories.get(uuid);
+        const deviceAccessory: IBaseAccessory = new accessory(this, cacheAccessory, device)
+        if (typeof deviceAccessory.mountService === 'function') {
             deviceAccessory.mountService()
         }
-        if (deviceAccessory && deviceAccessory.accessory) {
+
+        if (deviceAccessory.accessory) {
             this.accessories.set(uuid, deviceAccessory.accessory);
             this.formatAccessory.set(uuid, deviceAccessory);
 
@@ -180,16 +213,51 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
     }
     //	registry accessory to platform plugin
     registryAccessory(accessory: PlatformAccessory) {
-        this.log.info(`add accessory ${accessory.displayName} ${accessory.UUID}`)
+        this.log.info(`add accessory ${accessory.displayName} ${accessory.UUID} ${PLATFORM_NAME} ${PLATFORM_NAME} ${accessory}`)
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
     //	add accessory
     addAccessory(device: IDevice) {
-        deviceUtils.setDeviceName(device)
-        this.transferDevice(device)
+        // deviceUtils.setDeviceName(device)
+        this.transferDevice(device);
     }
     //	delete accessory
-    deleteAccessory(accessory: PlatformAccessory) {
+    deleteAccessory(serial_number: string) {
+        let UUIDSn = "";
+        for (const [key, value] of this.formatAccessory.entries()) {
+            if (value.device.serial_number !== serial_number) continue;
+
+            // rf bridge curtain need to be treated separately
+            if (deviceUtils.isRfBridge(value.device)) {
+                const rfGatewayConfig = get(value.device, ['tags', '_smartHomeConfig', 'rfGatewayConfig'], null) as IRFBridgeInfo | null;
+
+                if (!rfGatewayConfig) continue;
+                const { type, buttonInfoList } = rfGatewayConfig
+                if (type === '5') {
+                    buttonInfoList.forEach(buttonInfo => {
+                        const sn = `${serial_number}_curtain_${buttonInfo.rfChl}`;
+                        const uuid = this.api.hap.uuid.generate(sn);
+                        const accessory = this.accessories.get(uuid);
+                        if (!accessory) return;
+                        this.deleteOneAccessory(accessory);
+                    })
+                } else {
+                    UUIDSn = serial_number;
+                }
+
+                break;
+            } else {
+                UUIDSn = serial_number;
+                break;
+            }
+        }
+        const uuid = this.api.hap.uuid.generate(UUIDSn);
+        const accessory = this.accessories.get(uuid);
+        if (!accessory) return;
+        this.deleteOneAccessory(accessory);
+    }
+
+    deleteOneAccessory(accessory: PlatformAccessory) {
         this.log.info(`delete accessory ${accessory.displayName}`)
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory])
         this.accessories.delete(accessory.UUID);
@@ -230,11 +298,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 })
                 this.event.addEventListener('device#v1#deleteDevice', (event) => {
                     const { endpoint: { serial_number } } = JSON.parse(event.data) as IDeleteDevice;
-                    const uuid = this.api.hap.uuid.generate(serial_number);
-                    const accessory = this.accessories.get(uuid);
-                    if (accessory) {
-                        this.deleteAccessory(accessory)
-                    }
+                    this.deleteAccessory(serial_number);
                 })
             } catch (error) {
                 this.logManager(LogLevel.ERROR, 'catch init sse error', error);
@@ -253,34 +317,61 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
             this.logManager(LogLevel.ERROR, 'catch clear sse error', error)
         }
     }
-
     updateAccessory(serial_number: string, params?: any, sse = false) {
-        const uuid = this.api.hap.uuid.generate(serial_number);
+        let UUIDSn = "";
+        for (const [key, value] of this.formatAccessory.entries()) {
+            if (value.device.serial_number !== serial_number) continue;
+
+            // rf bridge curtain need to be treated separately
+            if (deviceUtils.isRfBridge(value.device)) {
+                const rfGatewayConfig = get(value.device, ['tags', '_smartHomeConfig', 'rfGatewayConfig'], null) as IRFBridgeInfo | null;
+                const rfCurtainChl = get(value, ['extra', 'rfCurtainChl']);
+
+                if (!rfGatewayConfig) continue;
+                if (rfGatewayConfig.type === '5') {
+                    const press = get(params, ['press', 'press'], null);
+                    UUIDSn = isNull(press) ? `${serial_number}_curtain_${rfCurtainChl}` : `${serial_number}_curtain_${press}`
+                } else {
+                    UUIDSn = serial_number;
+                }
+                break;
+            } else {
+                UUIDSn = serial_number;
+                break;
+            }
+        }
+
+
+
+        const uuid = this.api.hap.uuid.generate(UUIDSn);
         const accessory = this.formatAccessory.get(uuid)
         if (accessory && typeof accessory.updateValue === 'function') {
-            try {
-                if (!params) {
-                    accessory.updateValue()
-                    return;
-                }
-                //	online judge
-                if (params.hasOwnProperty('online')) {
-                    Object.assign(accessory.device, params)
-                } else if (!params.toggle) {
-                    //	hb control device, change the device state
-                    Object.assign(accessory.device.state, params)
-                } else {
-                    const toggleItem = params['toggle'];
-                    if (!accessory.device.state['toggle']) {
-                        accessory.device.state.toggle = {}
-                    }
-                    Object.assign(accessory.device.state['toggle'], toggleItem)
-                }
-                new accessory.platform.api.hap.HapStatusError(accessory.platform.api.hap.HAPStatus.SUCCESS);
-                accessory.updateValue(sse)
-            } catch (error) {
-                this.logManager(LogLevel.INFO, "updateAccessory error", error);
+            this.updateOneAccessory(accessory, params, sse);
+        }
+    }
+    updateOneAccessory(accessory: IBaseAccessory, params: any, sse: boolean) {
+        try {
+            if (!params) {
+                accessory.updateValue()
+                return;
             }
+            //	online judge
+            if (params.hasOwnProperty('online')) {
+                Object.assign(accessory.device, params)
+            } else if (!params.toggle) {
+                //	hb control device, change the device state
+                Object.assign(accessory.device.state, params)
+            } else {
+                const toggleItem = params['toggle'];
+                if (!accessory.device.state['toggle']) {
+                    accessory.device.state.toggle = {}
+                }
+                Object.assign(accessory.device.state['toggle'], toggleItem)
+            }
+            new accessory.platform.api.hap.HapStatusError(accessory.platform.api.hap.HAPStatus.SUCCESS);
+            accessory.updateValue(sse)
+        } catch (error) {
+            this.logManager(LogLevel.INFO, "updateAccessory error", error);
         }
     }
     handleHttpError(error: number) {

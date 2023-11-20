@@ -10,7 +10,8 @@ enum ECategory {
 	TEMPERATURE_HUMIDITY_SENSOR = 'temperatureAndHumiditySensor',
 	WATER_LEAK_DETECTOR = 'waterLeakDetector',
 	SMOKE_DETECTOR = 'smokeDetector',
-	BUTTON = 'button'
+	BUTTON = 'button',
+	FAN_LIGHT = 'fanLight',
 }
 
 export { ECategory }
