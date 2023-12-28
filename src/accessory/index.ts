@@ -8,6 +8,7 @@ import { door_accessory } from "./door_accessory";
 import { curtain_accessory } from "./curtain_accessory";
 import { thermostat_accessory } from "./thermostat_accessory";
 import { button_accessory } from "./button_accessory";
+import { fan_light_accessory } from "./fan_light_accessory";
 
 export default {
 	switch_accessory,
@@ -19,5 +20,6 @@ export default {
 	door_accessory,
 	curtain_accessory,
 	thermostat_accessory,
-	button_accessory
+	button_accessory,
+    fan_light_accessory
 }

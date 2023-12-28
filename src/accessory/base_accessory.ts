@@ -1,7 +1,7 @@
 import { Categories, LogLevel, PlatformAccessory } from 'homebridge';
 import { HomebridgePlatform } from '../HomebridgePlatform';
 import { IDevice } from '../ts/interface/IDevice';
-import { IBaseAccessory } from '../ts/interface/IBaseAccessory';
+import { IBaseAccessory, IBaseAccessoryExtra } from '../ts/interface/IBaseAccessory';
 import ihostConfig from '../config/IhostConfig';
 import httpRequest from '../service/httpRequest';
 import { IHttpConfig } from '../ts/interface/IHttpConfig';
@@ -9,24 +9,30 @@ import { EMethod } from '../ts/enum/EMethod';
 import { EHttpPath } from '../ts/enum/EHttpPath';
 import deviceUtils from '../utils/deviceUtils';
 import { ECapability } from '../ts/enum/ECapability';
+import { get, isString } from 'lodash';
+import IRFBridgeInfo from '../ts/interface/IRFBridgeInfo';
 
 export class base_accessory implements IBaseAccessory {
     platform: HomebridgePlatform;
     accessory: PlatformAccessory | undefined;
     category: Categories;
     device: IDevice;
+    extra?: IBaseAccessoryExtra;
 
-    constructor(platform: HomebridgePlatform, accessory: PlatformAccessory | undefined, category: Categories, device: IDevice) {
+    constructor(platform: HomebridgePlatform, accessory: PlatformAccessory | undefined, category: Categories, device: IDevice, extra?: IBaseAccessoryExtra) {
         this.platform = platform;
         this.accessory = accessory;
         this.category = category;
         this.device = device;
+        this.extra = extra;
 
+        const rfCurtainChl = get(this, ['extra', 'rfCurtainChl'], null);
         if (!this.device.state) {
             Object.assign(this.device, { state: {} })
         }
         if (!this.accessory) {
-            const uuid = platform.api.hap.uuid.generate(device.serial_number);
+            const sn = (deviceUtils.isRfBridge(device) && isString(rfCurtainChl)) ? `${device.serial_number}_curtain_${rfCurtainChl}` : device.serial_number;
+            const uuid = platform.api.hap.uuid.generate(sn);
             this.accessory = new platform.api.platformAccessory(device.name, uuid, category);
         } else {
             // this.platform.logManager(LogLevel.INFO, 'Existing Accessory', this.accessory.UUID, this.accessory.displayName)
@@ -34,10 +40,24 @@ export class base_accessory implements IBaseAccessory {
         //	set fundamental device info
         this.accessory.getService(this.platform.Service.AccessoryInformation)
             ?.setCharacteristic(this.platform.Characteristic.Manufacturer, 'eWeLink CUBE')
-            // .setCharacteristic(this.platform.Characteristic.Model, device.model)
-            .setCharacteristic(this.platform.Characteristic.SerialNumber, device.serial_number)
             .setCharacteristic(this.platform.Characteristic.Name, device.name)
+            .setCharacteristic(this.platform.Characteristic.SerialNumber, device.serial_number)
             .setCharacteristic(this.platform.Characteristic.FirmwareRevision, device.firmware_version);
+        // .setCharacteristic(this.platform.Characteristic.Model, device.model)
+
+        if (deviceUtils.isRfBridge(device)) {
+            let name = "";
+            const rfGatewayConfig = get(this.device, ['tags', '_smartHomeConfig', 'rfGatewayConfig'], null) as IRFBridgeInfo | null;
+            if (!rfGatewayConfig) return;
+            if (rfGatewayConfig.type !== "5") return;
+            rfGatewayConfig.buttonInfoList.forEach(buttonInfo => {
+                if (buttonInfo.rfChl === rfCurtainChl) {
+                    name = buttonInfo.name
+                }
+            })
+            const actualName = name || device.name;
+            this.accessory.getService(this.platform.Service.AccessoryInformation)?.setCharacteristic(this.platform.Characteristic.Name, actualName)
+        }
     }
 
     mountService() { }

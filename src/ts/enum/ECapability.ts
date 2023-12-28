@@ -16,7 +16,9 @@ enum ECapability {
     COLOR_TEMPERATURE = 'color-temperature',
     BRIGHTNESS = 'brightness',
     CAMERA_STREAM = 'camera-stream',
-    STARTUP = 'startup'
+    STARTUP = 'startup',
+    MODE = 'mode',
+    MULTI_PRESS = 'multi-press'
 }
 
 export { ECapability }
