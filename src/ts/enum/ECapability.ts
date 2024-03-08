@@ -18,7 +18,9 @@ enum ECapability {
     CAMERA_STREAM = 'camera-stream',
     STARTUP = 'startup',
     MODE = 'mode',
-    MULTI_PRESS = 'multi-press'
+    MULTI_PRESS = 'multi-press',
+    THERMOSTAT_TARGET_SET_POINT = 'thermostat-target-setpoint',
+    THERMOSTAT = 'thermostat'
 }
 
 export { ECapability }

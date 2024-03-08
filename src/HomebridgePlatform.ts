@@ -14,7 +14,7 @@ import httpRequest from "./service/httpRequest";
 import ihostConfig from "./config/IhostConfig";
 import deviceUtils from "./utils/deviceUtils";
 import { base_accessory } from "./accessory/base_accessory";
-import { get, isNull } from "lodash";
+import { get, isNull, merge } from "lodash";
 import IRFBridgeInfo from "./ts/interface/IRFBridgeInfo";
 import { rf_button_accessory } from "./accessory/rf_button_accessory";
 import { rf_curtain_accessory } from "./accessory/rf_curtain_accessory";
@@ -360,7 +360,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
                 Object.assign(accessory.device, params)
             } else if (!params.toggle) {
                 //	hb control device, change the device state
-                Object.assign(accessory.device.state, params)
+                merge(accessory.device.state, params);
             } else {
                 const toggleItem = params['toggle'];
                 if (!accessory.device.state['toggle']) {
