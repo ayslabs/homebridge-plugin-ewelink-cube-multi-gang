@@ -12,6 +12,7 @@ enum ECategory {
 	SMOKE_DETECTOR = 'smokeDetector',
 	BUTTON = 'button',
 	FAN_LIGHT = 'fanLight',
+	THERMOSTAT = 'thermostat',
 }
 
 export { ECategory }

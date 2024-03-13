@@ -1,10 +1,10 @@
 import { ECapability } from '../ts/enum/ECapability';
 import { IDevice } from '../ts/interface/IDevice';
-import _, { find, get } from 'lodash';
+import _, { find } from 'lodash';
 import colorConvertUtils from './colorConvertUtils';
 import { ECategory } from '../ts/enum/ECategory';
 import DeviceType from './../accessory/index';
-
+import { GET_CURRENT_HEATING_COOLING_STATE_INDEX, GET_TARGET_HEATING_COOLING_STATE_INDEX, MODE_OF_TRV, MODE_TO_TARGET_HEADING_COOLING_STATE_MAPPING, MODE_TYPE_OF_HB } from './const/TRVs';
 
 //	get multi channels devices config
 function getMultiDeviceChannel(device: IDevice) {
@@ -252,6 +252,77 @@ const deviceCapaStateMap = new Map<
                 return pressKey === 'singlePress' ? 0 : pressKey === 'doublePress' ? 1 : 2
             }
         }],
+        [ECapability.THERMOSTAT_TARGET_SET_POINT, {
+            getter: (params) => {
+                const MODE_TO_TARGET_MODE_MAPPING = {
+                    [MODE_OF_TRV.MANUAL]: {
+                        name: "manual-mode",
+                        default: 19
+                    },
+                    [MODE_OF_TRV.ECO]: {
+                        name: "eco-mode",
+                        default: 5
+                    },
+                    [MODE_OF_TRV.AUTO]: {
+                        name: "auto-mode",
+                        default: 19
+                    },
+                }
+                const { device } = params as { device: IDevice }
+                const mode = _.get(device, ['state', ECapability.THERMOSTAT, 'thermostat-mode', 'thermostatMode'], MODE_OF_TRV.MANUAL);
+
+                const targetMode = _.get(MODE_TO_TARGET_MODE_MAPPING, mode, 'manual-mode');
+                const currentTargetTemperature = _.get(device, ['state', ECapability.THERMOSTAT_TARGET_SET_POINT, targetMode.name, 'targetSetpoint'], targetMode.default)
+                return currentTargetTemperature;
+            },
+            getDeviceSend(params) {
+                const { value } = params as { value: number; }
+                const updateParams = {
+                    'thermostat-target-setpoint': {
+                        'manual-mode': {
+                            targetSetpoint: value
+                        },
+                    }
+                }
+
+                return updateParams;
+            }
+        }],
+        [ECapability.THERMOSTAT, {
+            getter: (params) => {
+                const ADAPTIVE_RECOVERY_STATUS_TO_CURRENT_HEATING_STATE_MAPPING = {
+                    HEATING: 1,
+                    INACTIVE: 0,
+                }
+                const { device, index } = params as { device: IDevice, index: number }
+
+                if (index === GET_CURRENT_HEATING_COOLING_STATE_INDEX) {
+                    const adaptiveRecoveryStatus = _.get(device, ['state', ECapability.THERMOSTAT, 'adaptive-recovery-status', 'adaptiveRecoveryStatus'], 'HEATING');
+                    return _.get(ADAPTIVE_RECOVERY_STATUS_TO_CURRENT_HEATING_STATE_MAPPING, adaptiveRecoveryStatus);
+                }
+
+                if (index === GET_TARGET_HEATING_COOLING_STATE_INDEX) {
+                    const mode = _.get(device, ['state', ECapability.THERMOSTAT, 'thermostat-mode', 'thermostatMode'], MODE_OF_TRV.MANUAL);
+                    const modeInfo = MODE_TO_TARGET_HEADING_COOLING_STATE_MAPPING.find(mapping => mapping.type === mode);
+                    return modeInfo ? modeInfo.code : 1;
+                }
+            },
+            getDeviceSend(params) {
+                const { modeCode } = params;
+
+                const modeInfo = MODE_TO_TARGET_HEADING_COOLING_STATE_MAPPING.find(mapping => mapping.code === modeCode);
+
+                const updateParams = {
+                    "thermostat": {
+                        "thermostat-mode": {
+                            "thermostatMode": modeInfo ? modeInfo.type : MODE_OF_TRV.MANUAL
+                        }
+                    }
+                }
+
+                return updateParams;
+            }
+        }],
     ])
 
 function getDeviceStateByCap(capability: ECapability, device: IDevice, index?: number) {
@@ -293,7 +364,8 @@ const categoryAccessoryMap = new Map<string[], any>([
     [[ECategory.CURTAIN], DeviceType.curtain_accessory],
     [[ECategory.TEMPERATURE_HUMIDITY_SENSOR, ECategory.TEMPERATURE_SENSOR, ECategory.HUMIDITY_SENSOR], DeviceType.thermostat_accessory],
     [[ECategory.BUTTON], DeviceType.button_accessory],
-    [[ECategory.FAN_LIGHT], DeviceType.fan_light_accessory]
+    [[ECategory.FAN_LIGHT], DeviceType.fan_light_accessory],
+    [[ECategory.THERMOSTAT], DeviceType.thermostat_valves_accessory]
 ]);
 
 /** get accessory by category */
