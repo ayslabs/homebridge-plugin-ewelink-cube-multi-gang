@@ -8,7 +8,7 @@ import _ from 'lodash';
 
 export class light_accessory extends base_accessory {
   private service?: Service;
-  private services?: Service[];
+  private services: Service[] = [];
   private state = { h: 0, s: 0, receiveSse: true };
   private timeout: NodeJS.Timeout | null = null;
   private receiveTimeout: NodeJS.Timeout | null = null;
@@ -30,7 +30,7 @@ export class light_accessory extends base_accessory {
 	  this.services = [];
 	  const channels = deviceUtils.getMultiDeviceChannel(this.device);
 
-	  for (const { name: chanName, value: chanKey } of channels) {
+	  channels.forEach(({ name: chanName, value: chanKey }, idx) => {
 		const displayName = `${this.device.name} (${chanName.toUpperCase()})`;
 		let svc = accessory.getService(displayName);
 		if (!svc) {
@@ -40,7 +40,10 @@ export class light_accessory extends base_accessory {
 			chanKey
 		  );
 		}
-		svc.setCharacteristic(this.platform.Characteristic.Name, displayName);
+		svc.setCharacteristic(
+		  this.platform.Characteristic.Name,
+		  displayName
+		);
 
 		// On/Off characteristic
 		svc.getCharacteristic(this.platform.Characteristic.On)
@@ -49,27 +52,33 @@ export class light_accessory extends base_accessory {
 			return info?.toggleState === 'on';
 		  })
 		  .onSet(async (value: CharacteristicValue) => {
-			const payload = { toggle: { [chanKey]: (value as boolean) ? 'on' : 'off' } };
-			this.platform.log.debug('Multi-gang toggle', payload);
-			await this.sendToDevice({ state: payload });
+			const params = deviceUtils.getDeviceSendState(
+			  ECapability.TOGGLE,
+			  { value: value as boolean, index: idx }
+			);
+			this.platform.log.debug('Multi-gang toggle params', params);
+			await this.sendToDevice(params);
 		  });
 
 		// Brightness characteristic (if supported)
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 		  svc.getCharacteristic(this.platform.Characteristic.Brightness)
 			.onGet(() => {
-			  const bright = (this.device.state.brightness as any)?.[chanKey]?.brightness;
-			  return bright ?? 100;
+			  const brightInfo = (this.device.state.brightness as any)?.[chanKey];
+			  return brightInfo?.brightness ?? 100;
 			})
 			.onSet(async (value: CharacteristicValue) => {
-			  const payload = { brightness: { [chanKey]: value as number } };
-			  this.platform.log.debug('Multi-gang brightness', payload);
-			  await this.sendToDevice({ state: payload });
+			  const params = deviceUtils.getDeviceSendState(
+				ECapability.BRIGHTNESS,
+				{ value: value as number, index: idx }
+			  );
+			  this.platform.log.debug('Multi-gang brightness params', params);
+			  await this.sendToDevice(params);
 			});
 		}
 
 		this.services.push(svc);
-	  }
+	  });
 	  return;
 	}
 
@@ -87,9 +96,12 @@ export class light_accessory extends base_accessory {
 	  svc.getCharacteristic(this.platform.Characteristic.On)
 		.onGet(() => this.getDeviceStateByCap(ECapability.POWER, this.device))
 		.onSet(async (value: CharacteristicValue) => {
-		  const payload = { power: { value: value as boolean } };
-		  this.platform.log.debug('Single-gang power', payload);
-		  await this.sendToDevice({ state: payload });
+		  const params = deviceUtils.getDeviceSendState(
+			ECapability.POWER,
+			{ value: value as boolean }
+		  );
+		  this.platform.log.debug('Single-gang power params', params);
+		  await this.sendToDevice(params);
 		});
 	}
 
@@ -98,34 +110,54 @@ export class light_accessory extends base_accessory {
 	  this.service?.getCharacteristic(this.platform.Characteristic.Brightness)
 		.onGet(() => this.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
 		.onSet(async (value: CharacteristicValue) => {
-		  const payload = { brightness: value as number };
-		  this.platform.log.debug('Single-gang brightness', payload);
-		  await this.sendToDevice({ state: payload });
+		  const params = deviceUtils.getDeviceSendState(
+			ECapability.BRIGHTNESS,
+			{ value: value as number }
+		  );
+		  this.platform.log.debug('Single-gang brightness params', params);
+		  await this.sendToDevice(params);
 		});
 	}
 
-	// ColorTemperature
+	// Single-gang: COLOR_TEMPERATURE
 	if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_TEMPERATURE)) {
-	  this.service?.getCharacteristic(this.platform.Characteristic.ColorTemperature)
+	  this.service?.getCharacteristic(
+		this.platform.Characteristic.ColorTemperature
+	  )
 		.onGet(() => this.getDeviceStateByCap(ECapability.COLOR_TEMPERATURE, this.device))
 		.onSet(async (value: CharacteristicValue) => {
-		  const payload = { colorTemperature: value as number };
-		  this.platform.log.debug('Color temperature', payload);
-		  await this.sendToDevice({ state: payload });
+		  const params = deviceUtils.getDeviceSendState(
+			ECapability.COLOR_TEMPERATURE,
+			{ value: value as number }
+		  );
+		  this.platform.log.debug('Single-gang CT params', params);
+		  await this.sendToDevice(params);
 		});
 	}
 
-	// RGB
+	// Single-gang: COLOR_RGB
 	if (deviceUtils.renderServiceByCapability(this.device, ECapability.COLOR_RGB)) {
 	  this.service?.getCharacteristic(this.platform.Characteristic.Hue)
-		.onGet(() => (this.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as [number, number, number])[0])
+		.onGet(() =>
+		  (this.getDeviceStateByCap(
+			ECapability.COLOR_RGB,
+			this.device
+		  ) as [number, number, number])[0]
+		)
 		.onSet((value: CharacteristicValue) => {
 		  this.state.h = value as number;
 		  this.controlDeviceHSV();
 		});
 
-	  this.service?.getCharacteristic(this.platform.Characteristic.Saturation)
-		.onGet(() => (this.getDeviceStateByCap(ECapability.COLOR_RGB, this.device) as [number, number, number])[1])
+	  this.service?.getCharacteristic(
+		this.platform.Characteristic.Saturation
+	  )
+		.onGet(() =>
+		  (this.getDeviceStateByCap(
+			ECapability.COLOR_RGB,
+			this.device
+		  ) as [number, number, number])[1]
+		)
 		.onSet((value: CharacteristicValue) => {
 		  this.state.s = value as number;
 		  this.controlDeviceHSV();
@@ -133,14 +165,17 @@ export class light_accessory extends base_accessory {
 	}
   }
 
-  private controlDeviceHSV() {
+  private controlDeviceHSV(): void {
 	if (this.timeout) return;
 	this.timeout = setTimeout(async () => {
 	  this.timeout = null;
 	  const { h, s } = this.state;
-	  const payload = { color: { h, s, v: 100 } };
-	  this.platform.log.debug('HSV payload', payload);
-	  await this.sendToDevice({ state: payload });
+	  const params = deviceUtils.getDeviceSendState(
+		ECapability.COLOR_RGB,
+		{ h, s, v: 100 }
+	  );
+	  this.platform.log.debug('HSV params', params);
+	  await this.sendToDevice(params);
 	}, 200);
   }
 
@@ -150,17 +185,18 @@ export class light_accessory extends base_accessory {
 	this.receiveTimeout = setTimeout(() => {
 	  this.state.receiveSse = true;
 	}, 3000);
-	this.platform.log.debug('Debounced payload', params);
-	await this.sendToDevice({ state: params });
+	this.platform.log.debug('Debounced params', params);
+	await this.sendToDevice(params);
   }, 100);
 
   updateValue(): void {
 	if (!this.state.receiveSse) return;
 
+	// Multi-gang update
 	if (this.device.state.toggle) {
 	  const accessory = this.accessory!;
 	  const channels = deviceUtils.getMultiDeviceChannel(this.device);
-	  for (const { name: chanName } of channels) {
+	  channels.forEach(({ name: chanName }) => {
 		const displayName = `${this.device.name} (${chanName.toUpperCase()})`;
 		const svc = accessory.getService(displayName);
 		const info = (this.device.state.toggle as any)[chanName];
@@ -170,10 +206,11 @@ export class light_accessory extends base_accessory {
 			info.toggleState === 'on'
 		  );
 		}
-	  }
+	  });
 	  return;
 	}
 
+	// Fallback to base class handling
 	super.updateValue();
   }
 }
