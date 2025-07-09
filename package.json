@@ -9,7 +9,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/CoolKit-Technologies/cc.coolkit.it.ihost.homebridge.plugin.server.git"
+		"url": "https://github.com/ayslabs/homebridge-plugin-ewelink-cube-multi-gang.git"
 	},
 	"engines": {
 		"node": ">=14.18.1",
