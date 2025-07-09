@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'eWeLinkCUBEPlatform';
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-plugin-ewelink-cube';
+export const PLUGIN_NAME = 'homebridge-plugin-ewelink-cube-multi-gang-support';
