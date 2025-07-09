@@ -1,5 +1,5 @@
 {
-	"name": "homebridge-plugin-ewelink-cube-multi-gang",
+	"name": "homebridge-plugin-ewelink-cube-multi-gang-support",
 	"displayName": "eWeLink CUBE",
 	"version": "1.2.2",
 	"description": "homebridge-plugin",
