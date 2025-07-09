@@ -64,7 +64,7 @@ export class light_accessory extends base_accessory {
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 		  svc.getCharacteristic(this.platform.Characteristic.Brightness)
 			.onGet(() => {
-			  const brightInfo = (this.device.state.brightness as any)?.[chanKey];
+			  const brightInfo = (this.device.state.brightness as any)[chanKey];
 			  return brightInfo?.brightness ?? 100;
 			})
 			.onSet(async (value: CharacteristicValue) => {
