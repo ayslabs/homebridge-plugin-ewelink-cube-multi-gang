@@ -47,11 +47,16 @@ export class light_accessory extends base_accessory {
 			this.getDeviceStateByCap(ECapability.TOGGLE, this.device, idx) as boolean
 		  )
 		  .onSet(async (value: CharacteristicValue) => {
-			const params = deviceUtils.getDeviceSendState(
-			  ECapability.TOGGLE,
-			  { value: value as boolean, index: idx }
-			);
-			await this.sendToDevice(params);
+			// Build full toggle map including this channel change
+			const currentToggle = this.device.state.toggle as Record<string, {toggleState: string}>;
+			const fullToggle: Record<string, {toggleState: string}> = {};
+			Object.entries(currentToggle).forEach(([key, info]) => {
+			  fullToggle[key] = { toggleState: info.toggleState };
+			});
+			fullToggle[chanKey] = { toggleState: (value as boolean) ? 'on' : 'off' };
+			const payload = { state: { toggle: fullToggle } };
+			this.platform.log.debug('Full multi-gang payload', payload);
+			await this.sendToDevice(payload);
 		  });
 
 		// Brightness slider acts as on/off toggle
