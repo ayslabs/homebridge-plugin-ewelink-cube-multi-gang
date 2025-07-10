@@ -59,9 +59,14 @@ export class light_accessory extends base_accessory {
 			await this.sendToDevice(payload);
 		  });
 
-		// Brightness slider acts as on/off toggle
+		// Brightness characteristic (full dim support)
 		svc.getCharacteristic(this.platform.Characteristic.Brightness)
 		  .onGet(() => {
+			// Return actual brightness if available, else map toggle state
+			const brightnessState = (this.device.state.brightness as any)?.[chanKey]?.brightness;
+			if (brightnessState != null) {
+			  return brightnessState;
+			}
 			const isOn = this.getDeviceStateByCap(
 			  ECapability.TOGGLE,
 			  this.device,
@@ -70,15 +75,27 @@ export class light_accessory extends base_accessory {
 			return isOn ? 100 : 0;
 		  })
 		  .onSet(async (value: CharacteristicValue) => {
-			const on = (value as number) >= 50;
-			const params = deviceUtils.getDeviceSendState(
-			  ECapability.TOGGLE,
-			  { value: on, index: idx }
-			);
-			await this.sendToDevice(params);
+			// Build full brightness map
+			const currentToggle = this.device.state.toggle as Record<string,{toggleState:string}>;
+			const currentBrightness = this.device.state.brightness as Record<string,{brightness:number}>;
+			const fullBrightness: Record<string,{brightness:number}> = {};
+			channels.forEach(({ value: key }) => {
+			  const b = currentBrightness?.[key]?.brightness;
+			  if (b != null) fullBrightness[key] = { brightness: b };
+			  else {
+				// default from toggle
+				const t = currentToggle[key].toggleState === 'on' ? 100 : 0;
+				fullBrightness[key] = { brightness: t };
+			  }
+			});
+			// override this channel
+			fullBrightness[chanKey] = { brightness: value as number };
+			const payload = { state: { brightness: fullBrightness } };
+			this.platform.log.debug('Full multi-gang brightness payload', payload);
+			await this.sendToDevice(payload);
 		  });
 
-		this.services.push(svc);
+		this.services.push(svc);(svc);
 	  });
 
 	  return;
