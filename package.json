@@ -1,7 +1,7 @@
 {
 	"name": "homebridge-plugin-ewelink-cube-multi-gang-support",
 	"displayName": "eWeLink CUBE",
-	"version": "1.2.14",
+	"version": "1.2.15",
 	"description": "homebridge-plugin",
 	"main": "lib/index.js",
 	"scripts": {
