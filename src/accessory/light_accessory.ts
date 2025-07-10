@@ -21,10 +21,11 @@ export class light_accessory extends base_accessory {
 	if (!this.accessory) return;
 	const accessory = this.accessory;
 
-	// Multi-gang support: split into separate Lightbulb services
+	// Multi-gang support: separate services per channel
 	if (deviceUtils.renderServiceByCapability(this.device, ECapability.TOGGLE)) {
 	  this.services = [];
 	  const channels = deviceUtils.getMultiDeviceChannel(this.device);
+
 	  channels.forEach(({ name: chanName, value: chanKey }, idx) => {
 		const displayName = `${this.device.name} (${chanName.toUpperCase()})`;
 		let svc = accessory.getService(displayName);
@@ -35,37 +36,29 @@ export class light_accessory extends base_accessory {
 			chanKey
 		  );
 		}
-		// On/Off
+
+		// On/Off characteristic
 		svc.getCharacteristic(this.platform.Characteristic.On)
-		  .onGet(() => {
-			const info = (this.device.state.toggle as any)[chanKey];
-			return info?.toggleState === 'on';
-		  })
-		  .onSet(async (v: CharacteristicValue) => {
+		  .onGet(() => this.getDeviceStateByCap(ECapability.TOGGLE, this.device, idx))
+		  .onSet(async (value: CharacteristicValue) => {
 			const params = deviceUtils.getDeviceSendState(
 			  ECapability.TOGGLE,
-			  { value: v as boolean, index: idx }
+			  { value: value as boolean, index: idx }
 			);
+			this.platform.log.debug('Multi-gang toggle params', params);
 			await this.sendToDevice(params);
 		  });
 
-		// Brightness fallback (if dimmer capability present)
+		// Brightness characteristic (if supported)
 		if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 		  svc.getCharacteristic(this.platform.Characteristic.Brightness)
-			.onGet(() => {
-			  const brightInfo = (this.device.state.brightness as any)?.[chanKey];
-			  if (brightInfo && brightInfo.brightness != null) {
-				return brightInfo.brightness;
-			  }
-			  const info = (this.device.state.toggle as any)[chanKey];
-			  return info?.toggleState === 'on' ? 100 : 0;
-			})
-			.onSet(async (v: CharacteristicValue) => {
-			  const on = (v as number) > 50;
+			.onGet(() => this.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device, idx))
+			.onSet(async (value: CharacteristicValue) => {
 			  const params = deviceUtils.getDeviceSendState(
-				ECapability.TOGGLE,
-				{ value: on, index: idx }
+				ECapability.BRIGHTNESS,
+				{ value: value as number, index: idx }
 			  );
+			  this.platform.log.debug('Multi-gang brightness params', params);
 			  await this.sendToDevice(params);
 			});
 		}
@@ -88,11 +81,12 @@ export class light_accessory extends base_accessory {
 	// Power On/Off
 	svc.getCharacteristic(this.platform.Characteristic.On)
 	  .onGet(() => this.getDeviceStateByCap(ECapability.POWER, this.device))
-	  .onSet(async (v: CharacteristicValue) => {
+	  .onSet(async (value: CharacteristicValue) => {
 		const params = deviceUtils.getDeviceSendState(
 		  ECapability.POWER,
-		  { value: v as boolean }
+		  { value: value as boolean }
 		);
+		this.platform.log.debug('Single-gang power params', params);
 		await this.sendToDevice(params);
 	  });
 
@@ -100,11 +94,12 @@ export class light_accessory extends base_accessory {
 	if (deviceUtils.renderServiceByCapability(this.device, ECapability.BRIGHTNESS)) {
 	  svc.getCharacteristic(this.platform.Characteristic.Brightness)
 		.onGet(() => this.getDeviceStateByCap(ECapability.BRIGHTNESS, this.device))
-		.onSet(async (v: CharacteristicValue) => {
+		.onSet(async (value: CharacteristicValue) => {
 		  const params = deviceUtils.getDeviceSendState(
 			ECapability.BRIGHTNESS,
-			{ value: v as number }
+			{ value: value as number }
 		  );
+		  this.platform.log.debug('Single-gang brightness params', params);
 		  await this.sendToDevice(params);
 		});
 	}
@@ -112,24 +107,21 @@ export class light_accessory extends base_accessory {
 
   updateValue(): void {
 	if (!this.state.receiveSse) return;
+
+	// Multi-gang update
 	if (this.device.state.toggle) {
 	  const accessory = this.accessory!;
 	  const channels = deviceUtils.getMultiDeviceChannel(this.device);
-	  channels.forEach(({ name: chanName, value: chanKey }) => {
+	  channels.forEach(({ name: chanName }, idx) => {
 		const displayName = `${this.device.name} (${chanName.toUpperCase()})`;
 		const svc = accessory.getService(displayName);
-		const info = (this.device.state.toggle as any)[chanKey];
-		svc?.updateCharacteristic(
-		  this.platform.Characteristic.On,
-		  info.toggleState === 'on'
-		);
-		svc?.updateCharacteristic(
-		  this.platform.Characteristic.Brightness,
-		  info.toggleState === 'on' ? 100 : 0
-		);
+		const stateObj = this.getDeviceStateByCap(ECapability.TOGGLE, this.device, idx) as boolean;
+		svc?.updateCharacteristic(this.platform.Characteristic.On, stateObj);
 	  });
 	  return;
 	}
+
+	// Single-gang update
 	super.updateValue();
   }
 }
